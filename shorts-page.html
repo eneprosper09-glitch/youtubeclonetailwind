@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shorts - YouTube</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #606060; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #808080; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .sidebar-transition {
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #606060; border-radius: 2px; }
+        .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+
+        #sidebar.collapsed .sidebar-text { display: none; }
+        #sidebar.collapsed .sidebar-icon { margin-right: 0; }
+        #sidebar.collapsed .sidebar-item { justify-content: center; padding: 8px 12px; }
+        #sidebar.collapsed .sidebar-heading { display: none; }
+        #sidebar.collapsed .sidebar-divider { display: none; }
+
+        .collapse-toggle { display: none; }
+        @media (min-width: 768px) {
+            .collapse-toggle { display: flex; }
+        }
+
+        .shorts-player-wrapper {
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .shorts-player {
+            position: relative;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            width: 100%;
+            aspect-ratio: 9/16;
+            max-height: 600px;
+        }
+        .shorts-player iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .shorts-nav-btn {
+            background: rgba(0,0,0,0.7);
+            border: none;
+            color: #f1f1f1;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .shorts-nav-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .shorts-nav-btn:active {
+            transform: scale(0.9);
+        }
+
+        .shorts-action-btn {
+            background: rgba(0,0,0,0.7);
+            border: none;
+            color: #f1f1f1;
+            padding: 10px 16px;
+            border-radius: 9999px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .shorts-action-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .shorts-action-btn.active {
+            background: #3ea6ff;
+            color: #0f0f0f;
+        }
+        .shorts-action-btn.subscribed {
+            background: rgba(255,255,255,0.2);
+            color: #f1f1f1;
+        }
+
+        .shorts-list-item {
+            display: flex;
+            gap: 12px;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background 0.2s;
+            margin-bottom: 4px;
+        }
+        .shorts-list-item:hover {
+            background: #1a1a1a;
+        }
+        .shorts-list-item.active {
+            background: #272727;
+        }
+        .shorts-list-item img {
+            width: 80px;
+            height: 142px;
+            object-fit: cover;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        .shorts-list-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .shorts-list-info h4 {
+            font-size: 13px;
+            font-weight: 500;
+            margin: 0 0 4px 0;
+            color: #f1f1f1;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .shorts-list-info p {
+            font-size: 12px;
+            color: #888;
+            margin: 2px 0;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            color: #f1f1f1;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 1px solid #272727;
+            font-size: 14px;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; pointer-events: auto; }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ==========================================
+    HEADER
+    ========================================== -->
+    <header class="fixed top-0 left-0 right-0 z-50 h-14 bg-[#0f0f0f] border-b border-[#272727] flex items-center justify-between px-4">
+        <div class="flex items-center gap-4">
+            <button id="menuToggle" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full">☰</button>
+            <a href="index.html" class="flex items-center gap-1 text-white font-bold text-xl">
+                <span class="text-red-600 text-2xl">▶</span>
+                <span>YouTube</span>
+            </a>
+        </div>
+        <div class="hidden md:flex flex-1 max-w-2xl mx-4">
+            <input type="text" placeholder="Search" class="flex-1 bg-[#121212] border border-[#303030] text-white px-4 py-2 rounded-l-full outline-none focus:border-blue-600" />
+            <button class="bg-[#222] border border-l-0 border-[#303030] px-6 rounded-r-full text-white hover:bg-[#2a2a2a]">🔍</button>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="create.html" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full hidden md:block">⊞</a>
+            <a href="notifications.html" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full hidden md:block">🔔</a>
+            <a href="profile.html" class="bg-blue-500 text-black w-8 h-8 rounded-full font-bold text-sm flex items-center justify-center hover:opacity-80">P</a>
+        </div>
+    </header>
+
+    <!-- ==========================================
+    SIDEBAR
+    ========================================== -->
+    <aside id="sidebar" class="fixed top-14 left-0 bottom-0 w-64 bg-[#0f0f0f] overflow-y-auto p-2 sidebar-scroll sidebar-transition z-40 border-r border-[#272727] -translate-x-full md:translate-x-0">
+        
+        <button id="collapseToggle" class="collapse-toggle items-center gap-2 w-full px-3 py-2 text-gray-400 hover:text-white hover:bg-[#272727] rounded-lg transition mb-2">
+            <span class="text-xl">◀</span>
+            <span class="sidebar-text text-sm">Collapse</span>
+        </button>
+
+        <nav class="space-y-1">
+            <a href="index.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">⌂</span>
+                <span class="sidebar-text text-sm">Home</span>
+            </a>
+            <a href="shorts-page.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727] bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▶</span>
+                <span class="sidebar-text text-sm">Shorts</span>
+            </a>
+            <a href="subscriptions.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▣</span>
+                <span class="sidebar-text text-sm">Subscriptions</span>
+            </a>
+            <hr class="sidebar-divider border-[#272727] my-2" />
+            <p class="sidebar-heading text-xs text-gray-500 px-3 py-2">YOU</p>
+            <a href="channel.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◉</span>
+                <span class="sidebar-text text-sm">Your channel</span>
+            </a>
+            <a href="history.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◷</span>
+                <span class="sidebar-text text-sm">History</span>
+            </a>
+            <a href="your-videos.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▣</span>
+                <span class="sidebar-text text-sm">Your videos</span>
+            </a>
+            <a href="watch-later.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◷</span>
+                <span class="sidebar-text text-sm">Watch later</span>
+            </a>
+            <a href="liked.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">♡</span>
+                <span class="sidebar-text text-sm">Liked videos</span>
+            </a>
+            <hr class="sidebar-divider border-[#272727] my-2" />
+            <p class="sidebar-heading text-xs text-gray-500 px-3 py-2">EXPLORE</p>
+            <a href="explore.html?category=trending" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">🔥</span>
+                <span class="sidebar-text text-sm">Trending</span>
+            </a>
+            <a href="explore.html?category=music" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">♫</span>
+                <span class="sidebar-text text-sm">Music</span>
+            </a>
+            <a href="explore.html?category=movies" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">🎬</span>
+                <span class="sidebar-text text-sm">Movies & TV</span>
+            </a>
+            <a href="explore.html?category=sports" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">⚽</span>
+                <span class="sidebar-text text-sm">Sports</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+
+    <!-- ==========================================
+    MAIN CONTENT - SHORTS PAGE
+    ========================================== -->
+    <main id="mainContent" class="mt-14 p-4 bg-[#0f0f0f] min-h-screen text-white transition-all duration-300 md:ml-64">
+
+        <div class="shorts-page-container flex flex-col lg:flex-row gap-6">
+
+            <!-- Shorts Player -->
+            <div class="shorts-player-wrapper flex-1">
+
+                <!-- Video Player -->
+                <div class="shorts-player">
+                    <iframe id="shortsIframe" src="" frameborder="0" allowfullscreen></iframe>
+                </div>
+
+                <!-- Navigation Buttons -->
+                <div class="flex justify-center gap-4 mt-4">
+                    <button class="shorts-nav-btn" id="prevShortBtn" title="Previous">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                    <button class="shorts-nav-btn" id="nextShortBtn" title="Next">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+
+                <!-- Shorts Info -->
+                <div class="mt-4">
+                    <h2 class="text-lg font-medium" id="shortsTitle">Loading...</h2>
+                    
+                    <div class="flex flex-wrap items-center gap-4 mt-3 py-3 border-y border-[#272727]">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-blue-500 text-black flex items-center justify-center font-bold text-lg" id="shortsChannelAvatar">C</div>
+                            <div>
+                                <h3 class="font-medium text-sm" id="shortsChannelName">Channel Name</h3>
+                                <p class="text-xs text-gray-400" id="shortsViews">0 views</p>
+                            </div>
+                        </div>
+                        <button class="shorts-action-btn" id="shortsSubscribeBtn">
+                            <i class="fas fa-bell"></i> <span id="shortsSubscribeText">Subscribe</span>
+                        </button>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap gap-3 mt-4">
+                        <button class="shorts-action-btn" id="shortsLikeBtn">
+                            <i class="fas fa-thumbs-up"></i> <span id="shortsLikeCount">0</span>
+                        </button>
+                        <button class="shorts-action-btn" id="shortsDislikeBtn">
+                            <i class="fas fa-thumbs-down"></i> <span id="shortsDislikeCount">0</span>
+                        </button>
+                        <button class="shorts-action-btn" id="shortsShareBtn">
+                            <i class="fas fa-share-alt"></i> Share
+                        </button>
+                        <button class="shorts-action-btn" id="shortsWatchLaterBtn">
+                            <i class="fas fa-clock"></i> <span id="shortsWatchLaterText">Save</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shorts List -->
+            <div class="shorts-list w-full lg:w-80 flex-shrink-0">
+                <h3 class="text-lg font-medium mb-4">All Shorts</h3>
+                <div id="shortsListGrid" class="max-h-[600px] overflow-y-auto pr-2"></div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- ==========================================
+    JAVASCRIPT
+    ========================================== -->
+    <script>
+        // =============================================
+        // DATA
+        // =============================================
+        const shortsData = [
+            { id: 101, title: "Stoicism and Nihilism 🤔", channel: "Philosophy Hub", avatar: "P", views: "484", thumbnail: "https://i.ytimg.com/vi/wlvBq73zD8o/hqdefault.jpg", url: "https://youtu.be/wlvBq73zD8o" },
+            { id: 102, title: "Philosophy is Useless", channel: "Philosophy Hub", avatar: "P", views: "2.3K", thumbnail: "https://i.ytimg.com/vi/x5L-MG6q5bA/hqdefault.jpg", url: "https://youtu.be/x5L-MG6q5bA" },
+            { id: 103, title: "Existentialism vs. Nihilism", channel: "Philosophy Hub", avatar: "P", views: "326K", thumbnail: "https://i.ytimg.com/vi/m_SJjpFB_GM/hqdefault.jpg", url: "https://youtu.be/m_SJjpFB_GM" },
+            { id: 104, title: "Build AI apps in minutes", channel: "Ads-creative", avatar: "A", views: "140K", thumbnail: "https://i.ytimg.com/vi/W7SwKZzl0kY/hqdefault.jpg", url: "https://youtu.be/W7SwKZzl0kY" },
+            { id: 105, title: "How to know if someone has low EQ", channel: "EQ Insights", avatar: "E", views: "515", thumbnail: "https://i.ytimg.com/vi/KwddlnXkJqs/hqdefault.jpg", url: "https://youtu.be/KwddlnXkJqs" },
+            { id: 106, title: "The Stoic Mindset - Jordan Peterson", channel: "Jordan Peterson Clips", avatar: "J", views: "1.2K", thumbnail: "https://i.ytimg.com/vi/hfePd0-8KCM/hqdefault.jpg", url: "https://youtu.be/hfePd0-8KCM" },
+            { id: 107, title: "1 Year of Coding #programming #comedy", channel: "CodeComedy", avatar: "C", views: "2K", thumbnail: "https://i.ytimg.com/vi/hRUJ41rdp4M/hqdefault.jpg", url: "https://youtu.be/hRUJ41rdp4M" },
+            { id: 108, title: "Change your Personality with this Method!", channel: "Mindset Lvl Up", avatar: "M", views: "17.4K", thumbnail: "https://i.ytimg.com/vi/Y3-fMyNuVFc/hqdefault.jpg", url: "https://youtu.be/Y3-fMyNuVFc" },
+            { id: 109, title: "Was Isaac Newton the greatest scientist ever?", channel: "Science Clips", avatar: "S", views: "31.4M", thumbnail: "https://i.ytimg.com/vi/-edBurb9WAk/hqdefault.jpg", url: "https://youtu.be/-edBurb9WAk" },
+            { id: 110, title: "#london #asake rehearsals with @compozers", channel: "Afrobeat Clips", avatar: "A", views: "459", thumbnail: "https://i.ytimg.com/vi/XHYr9C5J1FQ/hqdefault.jpg", url: "https://youtu.be/XHYr9C5J1FQ" },
+            { id: 111, title: "Deep Philosophy Short", channel: "Philosophy Hub", avatar: "P", views: "1.5K", thumbnail: "https://i.ytimg.com/vi/tc3b2X1m-dI/hqdefault.jpg", url: "https://youtu.be/tc3b2X1m-dI" },
+            { id: 112, title: "Motivational Short", channel: "Mindset Lvl Up", avatar: "M", views: "8.2K", thumbnail: "https://i.ytimg.com/vi/goDN8fnb8uA/hqdefault.jpg", url: "https://youtu.be/goDN8fnb8uA" }
+        ];
+
+        // =============================================
+        // TOAST
+        // =============================================
+        function showToast(message) {
+            var toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(function() {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // =============================================
+        // GET YOUTUBE EMBED URL
+        // =============================================
+        function getEmbedUrl(url) {
+            var patterns = [
+                /(?:youtube\.com\/watch\?v=)([^&]+)/,
+                /(?:youtu\.be\/)([^?]+)/
+            ];
+            for (var i = 0; i < patterns.length; i++) {
+                var match = url.match(patterns[i]);
+                if (match) return 'https://www.youtube.com/embed/' + match[1] + '?autoplay=1&rel=0';
+            }
+            return '';
+        }
+
+        // =============================================
+        // SHORTS PLAYER
+        // =============================================
+        var currentIndex = 0;
+        var shortsList = shortsData;
+
+        function loadShort(index) {
+            if (index < 0) index = shortsList.length - 1;
+            if (index >= shortsList.length) index = 0;
+
+            currentIndex = index;
+            var short = shortsList[index];
+
+            if (!short) return;
+
+            // Update iframe
+            var iframe = document.getElementById('shortsIframe');
+            iframe.src = getEmbedUrl(short.url);
+
+            // Update info
+            document.getElementById('shortsTitle').textContent = short.title;
+            document.getElementById('shortsChannelName').textContent = short.channel;
+            document.getElementById('shortsChannelAvatar').textContent = short.avatar || short.channel.charAt(0);
+            document.getElementById('shortsViews').textContent = short.views + ' views';
+
+            // Load button states
+            loadShortButtonStates(short.id);
+
+            // Highlight active in list
+            document.querySelectorAll('.shorts-list-item').forEach(function(item, i) {
+                if (i === index) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+
+            // Scroll to active item in list
+            var activeItem = document.querySelector('.shorts-list-item.active');
+            if (activeItem) {
+                activeItem.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+
+        // =============================================
+        // BUTTON STATES
+        // =============================================
+        function loadShortButtonStates(shortId) {
+            var likeKey = 'liked_' + shortId;
+            var dislikeKey = 'disliked_' + shortId;
+            var subscribeKey = 'subscribed_' + shortId;
+            var watchLaterKey = 'watchLater';
+
+            // Like
+            if (localStorage.getItem(likeKey) === 'true') {
+                document.getElementById('shortsLikeBtn').classList.add('active');
+            } else {
+                document.getElementById('shortsLikeBtn').classList.remove('active');
+            }
+            var likeCount = parseInt(localStorage.getItem(likeKey + '_count')) || 0;
+            document.getElementById('shortsLikeCount').textContent = likeCount;
+
+            // Dislike
+            if (localStorage.getItem(dislikeKey) === 'true') {
+                document.getElementById('shortsDislikeBtn').classList.add('active');
+            } else {
+                document.getElementById('shortsDislikeBtn').classList.remove('active');
+            }
+            var dislikeCount = parseInt(localStorage.getItem(dislikeKey + '_count')) || 0;
+            document.getElementById('shortsDislikeCount').textContent = dislikeCount;
+
+            // Subscribe
+            if (localStorage.getItem(subscribeKey) === 'true') {
+                document.getElementById('shortsSubscribeBtn').classList.add('subscribed');
+                document.getElementById('shortsSubscribeText').textContent = 'Subscribed';
+            } else {
+                document.getElementById('shortsSubscribeBtn').classList.remove('subscribed');
+                document.getElementById('shortsSubscribeText').textContent = 'Subscribe';
+            }
+
+            // Watch Later
+            var watchLater = JSON.parse(localStorage.getItem(watchLaterKey)) || [];
+            var exists = watchLater.some(function(item) { return item.id === shortId; });
+            if (exists) {
+                document.getElementById('shortsWatchLaterBtn').classList.add('active');
+                document.getElementById('shortsWatchLaterText').textContent = 'Added';
+            } else {
+                document.getElementById('shortsWatchLaterBtn').classList.remove('active');
+                document.getElementById('shortsWatchLaterText').textContent = 'Save';
+            }
+        }
+
+        // =============================================
+        // SETUP BUTTONS
+        // =============================================
+        function setupButtons() {
+            // Like
+            document.getElementById('shortsLikeBtn').addEventListener('click', function() {
+                var short = shortsList[currentIndex];
+                if (!short) return;
+
+                var likeKey = 'liked_' + short.id;
+                var dislikeKey = 'disliked_' + short.id;
+                var isLiked = localStorage.getItem(likeKey) === 'true';
+                var isDisliked = localStorage.getItem(dislikeKey) === 'true';
+
+                var likeCount = parseInt(localStorage.getItem(likeKey + '_count')) || 0;
+                var dislikeCount = parseInt(localStorage.getItem(dislikeKey + '_count')) || 0;
+
+                if (isLiked) {
+                    localStorage.removeItem(likeKey);
+                    likeCount = Math.max(0, likeCount - 1);
+                    localStorage.setItem(likeKey + '_count', likeCount);
+                    this.classList.remove('active');
+                } else {
+                    localStorage.setItem(likeKey, 'true');
+                    likeCount += 1;
+                    localStorage.setItem(likeKey + '_count', likeCount);
+                    this.classList.add('active');
+
+                    if (isDisliked) {
+                        localStorage.removeItem(dislikeKey);
+                        dislikeCount = Math.max(0, dislikeCount - 1);
+                        localStorage.setItem(dislikeKey + '_count', dislikeCount);
+                        document.getElementById('shortsDislikeBtn').classList.remove('active');
+                        document.getElementById('shortsDislikeCount').textContent = dislikeCount;
+                    }
+                }
+                document.getElementById('shortsLikeCount').textContent = likeCount;
+                document.getElementById('shortsDislikeCount').textContent = dislikeCount;
+            });
+
+            // Dislike
+            document.getElementById('shortsDislikeBtn').addEventListener('click', function() {
+                var short = shortsList[currentIndex];
+                if (!short) return;
+
+                var likeKey = 'liked_' + short.id;
+                var dislikeKey = 'disliked_' + short.id;
+                var isLiked = localStorage.getItem(likeKey) === 'true';
+                var isDisliked = localStorage.getItem(dislikeKey) === 'true';
+
+                var likeCount = parseInt(localStorage.getItem(likeKey + '_count')) || 0;
+                var dislikeCount = parseInt(localStorage.getItem(dislikeKey + '_count')) || 0;
+
+                if (isDisliked) {
+                    localStorage.removeItem(dislikeKey);
+                    dislikeCount = Math.max(0, dislikeCount - 1);
+                    localStorage.setItem(dislikeKey + '_count', dislikeCount);
+                    this.classList.remove('active');
+                } else {
+                    localStorage.setItem(dislikeKey, 'true');
+                    dislikeCount += 1;
+                    localStorage.setItem(dislikeKey + '_count', dislikeCount);
+                    this.classList.add('active');
+
+                    if (isLiked) {
+                        localStorage.removeItem(likeKey);
+                        likeCount = Math.max(0, likeCount - 1);
+                        localStorage.setItem(likeKey + '_count', likeCount);
+                        document.getElementById('shortsLikeBtn').classList.remove('active');
+                        document.getElementById('shortsLikeCount').textContent = likeCount;
+                    }
+                }
+                document.getElementById('shortsLikeCount').textContent = likeCount;
+                document.getElementById('shortsDislikeCount').textContent = dislikeCount;
+            });
+
+            // Subscribe
+            document.getElementById('shortsSubscribeBtn').addEventListener('click', function() {
+                var short = shortsList[currentIndex];
+                if (!short) return;
+
+                var subscribeKey = 'subscribed_' + short.id;
+                var isSubscribed = localStorage.getItem(subscribeKey) === 'true';
+
+                if (isSubscribed) {
+                    localStorage.removeItem(subscribeKey);
+                    this.classList.remove('subscribed');
+                    document.getElementById('shortsSubscribeText').textContent = 'Subscribe';
+                    showToast('🔔 Unsubscribed from ' + short.channel);
+                } else {
+                    localStorage.setItem(subscribeKey, 'true');
+                    this.classList.add('subscribed');
+                    document.getElementById('shortsSubscribeText').textContent = 'Subscribed';
+                    showToast('✅ Subscribed to ' + short.channel);
+                }
+            });
+
+            // Watch Later
+            document.getElementById('shortsWatchLaterBtn').addEventListener('click', function() {
+                var short = shortsList[currentIndex];
+                if (!short) return;
+
+                var watchLaterKey = 'watchLater';
+                var watchLater = JSON.parse(localStorage.getItem(watchLaterKey)) || [];
+                var exists = watchLater.some(function(item) { return item.id === short.id; });
+
+                if (exists) {
+                    watchLater = watchLater.filter(function(item) { return item.id !== short.id; });
+                    localStorage.setItem(watchLaterKey, JSON.stringify(watchLater));
+                    this.classList.remove('active');
+                    document.getElementById('shortsWatchLaterText').textContent = 'Save';
+                    showToast('⏰ Removed from Watch Later');
+                } else {
+                    watchLater.push({
+                        id: short.id,
+                        title: short.title,
+                        channel: short.channel,
+                        avatar: short.avatar,
+                        thumbnail: short.thumbnail,
+                        duration: 'TBD',
+                        addedAt: new Date().toISOString()
+                    });
+                    localStorage.setItem(watchLaterKey, JSON.stringify(watchLater));
+                    this.classList.add('active');
+                    document.getElementById('shortsWatchLaterText').textContent = 'Added';
+                    showToast('✅ Added to Watch Later');
+                }
+            });
+
+            // Share
+            document.getElementById('shortsShareBtn').addEventListener('click', function() {
+                var short = shortsList[currentIndex];
+                if (short && short.url) {
+                    navigator.clipboard.writeText(short.url).then(function() {
+                        showToast('✅ Link copied to clipboard!');
+                    }).catch(function() {
+                        showToast('📤 Share: ' + short.url);
+                    });
+                }
+            });
+        }
+
+        // =============================================
+        // RENDER SHORTS LIST
+        // =============================================
+        function renderShortsList() {
+            var grid = document.getElementById('shortsListGrid');
+
+            grid.innerHTML = shortsList.map(function(short, index) {
+                return `
+                    <div class="shorts-list-item ${index === 0 ? 'active' : ''}" data-index="${index}">
+                        <img src="${short.thumbnail}" alt="${short.title}" loading="lazy" onerror="this.src='https://via.placeholder.com/80x142/1a1a1a/888?text=No+Image'" />
+                        <div class="shorts-list-info">
+                            <h4>${short.title}</h4>
+                            <p>${short.channel}</p>
+                            <p>${short.views} views</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Click to load short
+            document.querySelectorAll('.shorts-list-item').forEach(function(item) {
+                item.addEventListener('click', function() {
+                    var index = parseInt(this.dataset.index);
+                    loadShort(index);
+                });
+            });
+        }
+
+        // =============================================
+        // NAVIGATION
+        // =============================================
+        function setupNavigation() {
+            document.getElementById('prevShortBtn').addEventListener('click', function() {
+                loadShort(currentIndex - 1);
+            });
+
+            document.getElementById('nextShortBtn').addEventListener('click', function() {
+                loadShort(currentIndex + 1);
+            });
+
+            // Keyboard navigation
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    loadShort(currentIndex - 1);
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    loadShort(currentIndex + 1);
+                }
+            });
+        }
+
+        // =============================================
+        // SIDEBAR
+        // =============================================
+        function setupSidebar() {
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            var toggle = document.getElementById('menuToggle');
+            var collapseToggle = document.getElementById('collapseToggle');
+            var main = document.getElementById('mainContent');
+
+            function isMobile() {
+                return window.innerWidth < 768;
+            }
+
+            function toggleSidebar() {
+                if (isMobile()) {
+                    var isOpen = !sidebar.classList.contains('-translate-x-full');
+                    if (isOpen) {
+                        sidebar.classList.add('-translate-x-full');
+                        if (overlay) overlay.classList.add('hidden');
+                    } else {
+                        sidebar.classList.remove('-translate-x-full');
+                        if (overlay) overlay.classList.remove('hidden');
+                    }
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    if (sidebar.classList.contains('collapsed')) {
+                        sidebar.style.width = '64px';
+                        if (main) {
+                            main.classList.remove('md:ml-64');
+                            main.classList.add('md:ml-16');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">▶</span><span class="sidebar-text text-sm">Expand</span>';
+                        }
+                    } else {
+                        sidebar.style.width = '256px';
+                        if (main) {
+                            main.classList.remove('md:ml-16');
+                            main.classList.add('md:ml-64');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">◀</span><span class="sidebar-text text-sm">Collapse</span>';
+                        }
+                    }
+                }
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', toggleSidebar);
+            }
+
+            if (collapseToggle) {
+                collapseToggle.addEventListener('click', toggleSidebar);
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden');
+                });
+            }
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768) {
+                    sidebar.classList.remove('-translate-x-full');
+                    if (overlay) overlay.classList.add('hidden');
+                    if (!sidebar.classList.contains('collapsed')) {
+                        sidebar.style.width = '256px';
+                        if (main) {
+                            main.classList.remove('md:ml-16');
+                            main.classList.add('md:ml-64');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">◀</span><span class="sidebar-text text-sm">Collapse</span>';
+                        }
+                    } else {
+                        sidebar.style.width = '64px';
+                        if (main) {
+                            main.classList.remove('md:ml-64');
+                            main.classList.add('md:ml-16');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">▶</span><span class="sidebar-text text-sm">Expand</span>';
+                        }
+                    }
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebar.classList.remove('collapsed');
+                    sidebar.style.width = '256px';
+                    if (main) {
+                        main.classList.remove('md:ml-64', 'md:ml-16');
+                    }
+                    if (overlay) overlay.classList.add('hidden');
+                }
+            });
+
+            if (window.innerWidth < 768) {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('collapsed');
+                sidebar.style.width = '256px';
+                if (main) {
+                    main.classList.remove('md:ml-64', 'md:ml-16');
+                }
+            } else {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.remove('collapsed');
+                sidebar.style.width = '256px';
+                if (main) {
+                    main.classList.remove('md:ml-16');
+                    main.classList.add('md:ml-64');
+                }
+            }
+        }
+
+        // =============================================
+        // INITIALIZE
+        // =============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            renderShortsList();
+            loadShort(0);
+            setupButtons();
+            setupNavigation();
+            setupSidebar();
+        });
+    </script>
+
+</body>
+</html>

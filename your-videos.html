@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Videos - YouTube</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #606060; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #808080; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .sidebar-transition {
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #606060; border-radius: 2px; }
+        .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+
+        #sidebar.collapsed .sidebar-text { display: none; }
+        #sidebar.collapsed .sidebar-icon { margin-right: 0; }
+        #sidebar.collapsed .sidebar-item { justify-content: center; padding: 8px 12px; }
+        #sidebar.collapsed .sidebar-heading { display: none; }
+        #sidebar.collapsed .sidebar-divider { display: none; }
+
+        .collapse-toggle { display: none; }
+        @media (min-width: 768px) {
+            .collapse-toggle { display: flex; }
+        }
+
+        .video-card {
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .video-card:hover {
+            transform: scale(1.02);
+        }
+
+        .delete-btn:hover {
+            background: #cc0000 !important;
+            color: white !important;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            color: #f1f1f1;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 1px solid #272727;
+            font-size: 14px;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; pointer-events: auto; }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ==========================================
+    HEADER
+    ========================================== -->
+    <header class="fixed top-0 left-0 right-0 z-50 h-14 bg-[#0f0f0f] border-b border-[#272727] flex items-center justify-between px-4">
+        <div class="flex items-center gap-4">
+            <button id="menuToggle" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full">☰</button>
+            <a href="index.html" class="flex items-center gap-1 text-white font-bold text-xl">
+                <span class="text-red-600 text-2xl">▶</span>
+                <span>YouTube</span>
+            </a>
+        </div>
+        <div class="hidden md:flex flex-1 max-w-2xl mx-4">
+            <input type="text" placeholder="Search" class="flex-1 bg-[#121212] border border-[#303030] text-white px-4 py-2 rounded-l-full outline-none focus:border-blue-600" />
+            <button class="bg-[#222] border border-l-0 border-[#303030] px-6 rounded-r-full text-white hover:bg-[#2a2a2a]">🔍</button>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="create.html" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full hidden md:block">⊞</a>
+            <a href="notifications.html" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full hidden md:block">🔔</a>
+            <a href="profile.html" class="bg-blue-500 text-black w-8 h-8 rounded-full font-bold text-sm flex items-center justify-center hover:opacity-80">P</a>
+        </div>
+    </header>
+
+    <!-- ==========================================
+    SIDEBAR
+    ========================================== -->
+    <aside id="sidebar" class="fixed top-14 left-0 bottom-0 w-64 bg-[#0f0f0f] overflow-y-auto p-2 sidebar-scroll sidebar-transition z-40 border-r border-[#272727] -translate-x-full md:translate-x-0">
+        
+        <button id="collapseToggle" class="collapse-toggle items-center gap-2 w-full px-3 py-2 text-gray-400 hover:text-white hover:bg-[#272727] rounded-lg transition mb-2">
+            <span class="text-xl">◀</span>
+            <span class="sidebar-text text-sm">Collapse</span>
+        </button>
+
+        <nav class="space-y-1">
+            <a href="index.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">⌂</span>
+                <span class="sidebar-text text-sm">Home</span>
+            </a>
+            <a href="shorts-page.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▶</span>
+                <span class="sidebar-text text-sm">Shorts</span>
+            </a>
+            <a href="subscriptions.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▣</span>
+                <span class="sidebar-text text-sm">Subscriptions</span>
+            </a>
+            <hr class="sidebar-divider border-[#272727] my-2" />
+            <p class="sidebar-heading text-xs text-gray-500 px-3 py-2">YOU</p>
+            <a href="channel.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◉</span>
+                <span class="sidebar-text text-sm">Your channel</span>
+            </a>
+            <a href="history.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◷</span>
+                <span class="sidebar-text text-sm">History</span>
+            </a>
+            <a href="your-videos.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727] bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▣</span>
+                <span class="sidebar-text text-sm">Your videos</span>
+            </a>
+            <a href="watch-later.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◷</span>
+                <span class="sidebar-text text-sm">Watch later</span>
+            </a>
+            <a href="liked.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">♡</span>
+                <span class="sidebar-text text-sm">Liked videos</span>
+            </a>
+            <hr class="sidebar-divider border-[#272727] my-2" />
+            <p class="sidebar-heading text-xs text-gray-500 px-3 py-2">EXPLORE</p>
+            <a href="explore.html?category=trending" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">🔥</span>
+                <span class="sidebar-text text-sm">Trending</span>
+            </a>
+            <a href="explore.html?category=music" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">♫</span>
+                <span class="sidebar-text text-sm">Music</span>
+            </a>
+            <a href="explore.html?category=movies" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">🎬</span>
+                <span class="sidebar-text text-sm">Movies & TV</span>
+            </a>
+            <a href="explore.html?category=sports" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">⚽</span>
+                <span class="sidebar-text text-sm">Sports</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+
+    <!-- ==========================================
+    MAIN CONTENT
+    ========================================== -->
+    <main id="mainContent" class="mt-14 p-4 bg-[#0f0f0f] min-h-screen text-white transition-all duration-300 md:ml-64">
+
+        <div class="max-w-6xl mx-auto">
+
+            <!-- Header -->
+            <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#272727] mb-6">
+                <div>
+                    <h1 class="text-2xl font-medium">
+                        <i class="fas fa-video text-blue-500 mr-2"></i>Your Videos
+                    </h1>
+                    <p id="videoCount" class="text-sm text-gray-400 mt-1">0 videos uploaded</p>
+                </div>
+                <a href="create.html" class="px-4 py-2 bg-blue-500 text-black rounded-full text-sm font-medium hover:bg-blue-400 transition flex items-center gap-2">
+                    <i class="fas fa-plus"></i> Upload
+                </a>
+            </div>
+
+            <!-- Videos Grid -->
+            <section>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="yourVideosGrid"></div>
+            </section>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-16 hidden">
+                <div class="text-6xl mb-4">🎬</div>
+                <h2 class="text-xl font-medium mb-2">No videos uploaded yet</h2>
+                <p class="text-gray-400 mb-6">Upload your first video to share it with the world!</p>
+                <a href="create.html" class="inline-block px-6 py-3 bg-blue-500 text-black rounded-full font-medium hover:bg-blue-400 transition">
+                    <i class="fas fa-upload mr-2"></i> Upload Video
+                </a>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- ==========================================
+    JAVASCRIPT
+    ========================================== -->
+    <script>
+        // =============================================
+        // TOAST
+        // =============================================
+        function showToast(message) {
+            var toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(function() {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // =============================================
+        // LOAD YOUR VIDEOS
+        // =============================================
+        function loadYourVideos() {
+            var grid = document.getElementById('yourVideosGrid');
+            var count = document.getElementById('videoCount');
+            var emptyState = document.getElementById('emptyState');
+
+            // Get user videos from localStorage
+            var userVideos = JSON.parse(localStorage.getItem('userVideos')) || [];
+
+            // Update count
+            count.textContent = userVideos.length + ' video' + (userVideos.length !== 1 ? 's' : '') + ' uploaded';
+
+            // Show/hide empty state
+            if (userVideos.length === 0) {
+                emptyState.classList.remove('hidden');
+                grid.innerHTML = '';
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            // Render videos
+            grid.innerHTML = userVideos.map(function(video, index) {
+                return `
+                    <div class="video-card relative group" data-index="${index}">
+                        <div class="relative rounded-xl overflow-hidden bg-[#1a1a1a]">
+                            <img src="${video.thumbnail || 'https://via.placeholder.com/320x180/1a1a1a/888?text=No+Image'}" alt="${video.title}" class="w-full aspect-video object-cover" loading="lazy" onerror="this.src='https://via.placeholder.com/320x180/1a1a1a/888?text=No+Image'" />
+                            <span class="absolute bottom-2 right-2 bg-black/90 text-white text-xs px-1.5 py-0.5 rounded">${video.duration || '5:00'}</span>
+                            <div class="absolute top-2 left-2 bg-green-500/90 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                                <i class="fas fa-check-circle"></i> Uploaded
+                            </div>
+                        </div>
+                        <div class="flex gap-3 mt-3">
+                            <div class="w-9 h-9 rounded-full bg-blue-500 text-black flex items-center justify-center font-bold text-sm flex-shrink-0">${video.avatar || 'Y'}</div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-sm font-medium line-clamp-2">${video.title}</h3>
+                                <p class="text-xs text-gray-400 mt-1">${video.channel || 'Your Channel'}</p>
+                                <p class="text-xs text-gray-400">${video.views || '0'} views • ${video.uploaded || 'Just now'}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-3 pt-3 border-t border-[#1a1a1a]">
+                            <button class="edit-btn flex-1 px-3 py-1.5 bg-[#272727] text-white rounded-full text-xs hover:bg-[#3a3a3a] transition" data-index="${index}">
+                                <i class="fas fa-pen"></i> Edit
+                            </button>
+                            <button class="delete-btn flex-1 px-3 py-1.5 bg-[#272727] text-white rounded-full text-xs hover:bg-red-600 transition" data-index="${index}">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Click video to watch
+            document.querySelectorAll('#yourVideosGrid .video-card').forEach(function(card) {
+                card.addEventListener('click', function(e) {
+                    if (e.target.closest('.edit-btn') || e.target.closest('.delete-btn')) return;
+                    var index = this.dataset.index;
+                    var userVideos = JSON.parse(localStorage.getItem('userVideos')) || [];
+                    var video = userVideos[index];
+                    if (video) {
+                        localStorage.setItem('selectedVideoId', video.id || Date.now());
+                        window.location.href = 'watch.html';
+                    }
+                });
+            });
+
+            // Edit buttons
+            document.querySelectorAll('.edit-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var index = parseInt(this.dataset.index);
+                    editVideo(index);
+                });
+            });
+
+            // Delete buttons
+            document.querySelectorAll('.delete-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var index = parseInt(this.dataset.index);
+                    deleteVideo(index);
+                });
+            });
+        }
+
+        // =============================================
+        // EDIT VIDEO
+        // =============================================
+        function editVideo(index) {
+            var userVideos = JSON.parse(localStorage.getItem('userVideos')) || [];
+            var video = userVideos[index];
+            if (!video) return;
+
+            var newTitle = prompt('Edit title:', video.title);
+            if (newTitle !== null && newTitle.trim() !== '') {
+                video.title = newTitle.trim();
+            }
+
+            var newDescription = prompt('Edit description:', video.description || '');
+            if (newDescription !== null) {
+                video.description = newDescription.trim() || 'No description.';
+            }
+
+            var newCategory = prompt('Edit category:', video.category || 'Music');
+            if (newCategory !== null && newCategory.trim() !== '') {
+                video.category = newCategory.trim();
+            }
+
+            userVideos[index] = video;
+            localStorage.setItem('userVideos', JSON.stringify(userVideos));
+            loadYourVideos();
+            showToast('✅ Video updated!');
+        }
+
+        // =============================================
+        // DELETE VIDEO
+        // =============================================
+        function deleteVideo(index) {
+            var userVideos = JSON.parse(localStorage.getItem('userVideos')) || [];
+            var video = userVideos[index];
+            if (!video) return;
+
+            if (confirm('Delete "' + video.title + '"?')) {
+                userVideos.splice(index, 1);
+                localStorage.setItem('userVideos', JSON.stringify(userVideos));
+                loadYourVideos();
+                showToast('🗑️ Video deleted!');
+            }
+        }
+
+        // =============================================
+        // SIDEBAR
+        // =============================================
+        function setupSidebar() {
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            var toggle = document.getElementById('menuToggle');
+            var collapseToggle = document.getElementById('collapseToggle');
+            var main = document.getElementById('mainContent');
+
+            function isMobile() {
+                return window.innerWidth < 768;
+            }
+
+            function toggleSidebar() {
+                if (isMobile()) {
+                    var isOpen = !sidebar.classList.contains('-translate-x-full');
+                    if (isOpen) {
+                        sidebar.classList.add('-translate-x-full');
+                        if (overlay) overlay.classList.add('hidden');
+                    } else {
+                        sidebar.classList.remove('-translate-x-full');
+                        if (overlay) overlay.classList.remove('hidden');
+                    }
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    if (sidebar.classList.contains('collapsed')) {
+                        sidebar.style.width = '64px';
+                        if (main) {
+                            main.classList.remove('md:ml-64');
+                            main.classList.add('md:ml-16');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">▶</span><span class="sidebar-text text-sm">Expand</span>';
+                        }
+                    } else {
+                        sidebar.style.width = '256px';
+                        if (main) {
+                            main.classList.remove('md:ml-16');
+                            main.classList.add('md:ml-64');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">◀</span><span class="sidebar-text text-sm">Collapse</span>';
+                        }
+                    }
+                }
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', toggleSidebar);
+            }
+
+            if (collapseToggle) {
+                collapseToggle.addEventListener('click', toggleSidebar);
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden');
+                });
+            }
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768) {
+                    sidebar.classList.remove('-translate-x-full');
+                    if (overlay) overlay.classList.add('hidden');
+                    if (!sidebar.classList.contains('collapsed')) {
+                        sidebar.style.width = '256px';
+                        if (main) {
+                            main.classList.remove('md:ml-16');
+                            main.classList.add('md:ml-64');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">◀</span><span class="sidebar-text text-sm">Collapse</span>';
+                        }
+                    } else {
+                        sidebar.style.width = '64px';
+                        if (main) {
+                            main.classList.remove('md:ml-64');
+                            main.classList.add('md:ml-16');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">▶</span><span class="sidebar-text text-sm">Expand</span>';
+                        }
+                    }
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebar.classList.remove('collapsed');
+                    sidebar.style.width = '256px';
+                    if (main) {
+                        main.classList.remove('md:ml-64', 'md:ml-16');
+                    }
+                    if (overlay) overlay.classList.add('hidden');
+                }
+            });
+
+            if (window.innerWidth < 768) {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('collapsed');
+                sidebar.style.width = '256px';
+                if (main) {
+                    main.classList.remove('md:ml-64', 'md:ml-16');
+                }
+            } else {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.remove('collapsed');
+                sidebar.style.width = '256px';
+                if (main) {
+                    main.classList.remove('md:ml-16');
+                    main.classList.add('md:ml-64');
+                }
+            }
+        }
+
+        // =============================================
+        // INITIALIZE
+        // =============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            loadYourVideos();
+            setupSidebar();
+        });
+    </script>
+
+</body>
+</html>

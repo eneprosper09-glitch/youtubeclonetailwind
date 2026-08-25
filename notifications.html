@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notifications - YouTube</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #606060; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #808080; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .sidebar-transition {
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #606060; border-radius: 2px; }
+        .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+
+        #sidebar.collapsed .sidebar-text { display: none; }
+        #sidebar.collapsed .sidebar-icon { margin-right: 0; }
+        #sidebar.collapsed .sidebar-item { justify-content: center; padding: 8px 12px; }
+        #sidebar.collapsed .sidebar-heading { display: none; }
+        #sidebar.collapsed .sidebar-divider { display: none; }
+
+        .collapse-toggle { display: none; }
+        @media (min-width: 768px) {
+            .collapse-toggle { display: flex; }
+        }
+
+        .notification-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 2px;
+            border-left: 3px solid transparent;
+        }
+        .notification-item:hover {
+            background: #1a1a1a;
+        }
+        .notification-item.unread {
+            background: #1a1a2e;
+            border-left-color: #3ea6ff;
+        }
+        .notification-item.unread:hover {
+            background: #1a1a3e;
+        }
+        .notification-item.read {
+            opacity: 0.7;
+        }
+        .notification-icon {
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #272727;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .notification-content {
+            flex: 1;
+            min-width: 0;
+        }
+        .notification-message {
+            font-size: 14px;
+            color: #f1f1f1;
+            line-height: 1.4;
+        }
+        .notification-message strong {
+            color: #f1f1f1;
+        }
+        .notification-time {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+        .notification-remove-btn {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .notification-remove-btn:hover {
+            color: #cc0000;
+            background: #272727;
+        }
+
+        .notification-tab {
+            padding: 10px 20px;
+            color: #888;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .notification-tab:hover {
+            color: #f1f1f1;
+        }
+        .notification-tab.active {
+            color: #f1f1f1;
+            border-bottom-color: #3ea6ff;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            color: #f1f1f1;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 1px solid #272727;
+            font-size: 14px;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; pointer-events: auto; }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ==========================================
+    HEADER
+    ========================================== -->
+    <header class="fixed top-0 left-0 right-0 z-50 h-14 bg-[#0f0f0f] border-b border-[#272727] flex items-center justify-between px-4">
+        <div class="flex items-center gap-4">
+            <button id="menuToggle" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full">☰</button>
+            <a href="index.html" class="flex items-center gap-1 text-white font-bold text-xl">
+                <span class="text-red-600 text-2xl">▶</span>
+                <span>YouTube</span>
+            </a>
+        </div>
+        <div class="hidden md:flex flex-1 max-w-2xl mx-4">
+            <input type="text" placeholder="Search" class="flex-1 bg-[#121212] border border-[#303030] text-white px-4 py-2 rounded-l-full outline-none focus:border-blue-600" />
+            <button class="bg-[#222] border border-l-0 border-[#303030] px-6 rounded-r-full text-white hover:bg-[#2a2a2a]">🔍</button>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="create.html" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full hidden md:block">⊞</a>
+            <a href="notifications.html" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full hidden md:block bg-[#272727]">🔔</a>
+            <a href="profile.html" class="bg-blue-500 text-black w-8 h-8 rounded-full font-bold text-sm flex items-center justify-center hover:opacity-80">P</a>
+        </div>
+    </header>
+
+    <!-- ==========================================
+    SIDEBAR
+    ========================================== -->
+    <aside id="sidebar" class="fixed top-14 left-0 bottom-0 w-64 bg-[#0f0f0f] overflow-y-auto p-2 sidebar-scroll sidebar-transition z-40 border-r border-[#272727] -translate-x-full md:translate-x-0">
+        
+        <button id="collapseToggle" class="collapse-toggle items-center gap-2 w-full px-3 py-2 text-gray-400 hover:text-white hover:bg-[#272727] rounded-lg transition mb-2">
+            <span class="text-xl">◀</span>
+            <span class="sidebar-text text-sm">Collapse</span>
+        </button>
+
+        <nav class="space-y-1">
+            <a href="index.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">⌂</span>
+                <span class="sidebar-text text-sm">Home</span>
+            </a>
+            <a href="shorts-page.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▶</span>
+                <span class="sidebar-text text-sm">Shorts</span>
+            </a>
+            <a href="subscriptions.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▣</span>
+                <span class="sidebar-text text-sm">Subscriptions</span>
+            </a>
+            <hr class="sidebar-divider border-[#272727] my-2" />
+            <p class="sidebar-heading text-xs text-gray-500 px-3 py-2">YOU</p>
+            <a href="channel.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◉</span>
+                <span class="sidebar-text text-sm">Your channel</span>
+            </a>
+            <a href="history.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◷</span>
+                <span class="sidebar-text text-sm">History</span>
+            </a>
+            <a href="your-videos.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▣</span>
+                <span class="sidebar-text text-sm">Your videos</span>
+            </a>
+            <a href="watch-later.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◷</span>
+                <span class="sidebar-text text-sm">Watch later</span>
+            </a>
+            <a href="liked.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">♡</span>
+                <span class="sidebar-text text-sm">Liked videos</span>
+            </a>
+            <hr class="sidebar-divider border-[#272727] my-2" />
+            <p class="sidebar-heading text-xs text-gray-500 px-3 py-2">EXPLORE</p>
+            <a href="explore.html?category=trending" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">🔥</span>
+                <span class="sidebar-text text-sm">Trending</span>
+            </a>
+            <a href="explore.html?category=music" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">♫</span>
+                <span class="sidebar-text text-sm">Music</span>
+            </a>
+            <a href="explore.html?category=movies" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">🎬</span>
+                <span class="sidebar-text text-sm">Movies & TV</span>
+            </a>
+            <a href="explore.html?category=sports" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">⚽</span>
+                <span class="sidebar-text text-sm">Sports</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+
+    <!-- ==========================================
+    MAIN CONTENT - NOTIFICATIONS
+    ========================================== -->
+    <main id="mainContent" class="mt-14 p-4 bg-[#0f0f0f] min-h-screen text-white transition-all duration-300 md:ml-64">
+
+        <div class="max-w-4xl mx-auto">
+
+            <!-- Header -->
+            <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#272727] mb-6">
+                <div>
+                    <h1 class="text-2xl font-medium">
+                        <i class="fas fa-bell text-blue-500 mr-2"></i>Notifications
+                    </h1>
+                    <p id="notificationCount" class="text-sm text-gray-400 mt-1">0 notifications</p>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button id="markAllBtn" class="px-4 py-2 bg-[#272727] text-white rounded-full text-sm hover:bg-[#3a3a3a] transition flex items-center gap-2">
+                        <i class="fas fa-check-double"></i> Mark all read
+                    </button>
+                    <button id="clearAllBtn" class="px-4 py-2 bg-[#272727] text-white rounded-full text-sm hover:bg-red-600 transition flex items-center gap-2">
+                        <i class="fas fa-trash"></i> Clear all
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="flex gap-0 overflow-x-auto border-b border-[#272727] mb-4">
+                <button class="notification-tab active" data-filter="all">All</button>
+                <button class="notification-tab" data-filter="like">👍 Likes</button>
+                <button class="notification-tab" data-filter="comment">💬 Comments</button>
+                <button class="notification-tab" data-filter="subscribe">🔔 Subscriptions</button>
+                <button class="notification-tab" data-filter="upload">📤 Uploads</button>
+            </div>
+
+            <!-- Notifications List -->
+            <div id="notificationsList"></div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-16 hidden">
+                <div class="text-6xl mb-4">🔔</div>
+                <h2 class="text-xl font-medium mb-2">No notifications yet</h2>
+                <p class="text-gray-400 mb-6">When someone likes, comments, or subscribes, you'll see it here.</p>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- ==========================================
+    JAVASCRIPT
+    ========================================== -->
+    <script>
+        // =============================================
+        // TOAST
+        // =============================================
+        function showToast(message) {
+            var toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(function() {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // =============================================
+        // GET NOTIFICATION ICON
+        // =============================================
+        function getNotificationIcon(type) {
+            var icons = {
+                like: '👍',
+                comment: '💬',
+                subscribe: '🔔',
+                upload: '📤',
+                default: '📢'
+            };
+            return icons[type] || icons.default;
+        }
+
+        // =============================================
+        // FORMAT TIME AGO
+        // =============================================
+        function formatTimeAgo(timestamp) {
+            var date = new Date(timestamp);
+            var now = new Date();
+            var diffMs = now - date;
+            var diffMins = Math.floor(diffMs / 60000);
+            var diffHours = Math.floor(diffMs / 3600000);
+            var diffDays = Math.floor(diffMs / 86400000);
+            var diffWeeks = Math.floor(diffDays / 7);
+            var diffMonths = Math.floor(diffDays / 30);
+            var diffYears = Math.floor(diffDays / 365);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return diffMins + 'm ago';
+            if (diffHours < 24) return diffHours + 'h ago';
+            if (diffDays < 7) return diffDays + 'd ago';
+            if (diffWeeks < 4) return diffWeeks + 'w ago';
+            if (diffMonths < 12) return diffMonths + 'mo ago';
+            return diffYears + 'y ago';
+        }
+
+        // =============================================
+        // LOAD NOTIFICATIONS
+        // =============================================
+        var currentFilter = 'all';
+
+        function loadNotifications() {
+            var list = document.getElementById('notificationsList');
+            var count = document.getElementById('notificationCount');
+            var emptyState = document.getElementById('emptyState');
+
+            var notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+
+            // Update count
+            var unreadCount = notifications.filter(function(n) { return !n.read; }).length;
+            count.textContent = notifications.length + ' notification' + (notifications.length !== 1 ? 's' : '');
+
+            // Filter
+            var filtered = notifications;
+            if (currentFilter !== 'all') {
+                filtered = notifications.filter(function(n) { return n.type === currentFilter; });
+            }
+
+            // Sort by date (newest first)
+            filtered.sort(function(a, b) {
+                return new Date(b.timestamp) - new Date(a.timestamp);
+            });
+
+            // Show/hide empty state
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                list.innerHTML = '';
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            // Render notifications
+            list.innerHTML = filtered.map(function(notif, index) {
+                return `
+                    <div class="notification-item ${notif.read ? 'read' : 'unread'}" data-id="${notif.id}">
+                        <div class="notification-icon">${getNotificationIcon(notif.type)}</div>
+                        <div class="notification-content">
+                            <div class="notification-message">
+                                <strong>${notif.username || 'Someone'}</strong>
+                                ${notif.message}
+                                ${notif.videoTitle ? ': "' + notif.videoTitle + '"' : ''}
+                            </div>
+                            <div class="notification-time">${formatTimeAgo(notif.timestamp)}</div>
+                        </div>
+                        <button class="notification-remove-btn" data-id="${notif.id}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            // Remove notification buttons
+            document.querySelectorAll('.notification-remove-btn').forEach(function(btn) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var id = parseInt(this.dataset.id);
+                    removeNotification(id);
+                });
+            });
+
+            // Click to mark as read
+            document.querySelectorAll('.notification-item').forEach(function(item) {
+                item.addEventListener('click', function() {
+                    var id = parseInt(this.dataset.id);
+                    markNotificationRead(id);
+                });
+            });
+        }
+
+        // =============================================
+        // MARK NOTIFICATION AS READ
+        // =============================================
+        function markNotificationRead(id) {
+            var notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+            var notif = notifications.find(function(n) { return n.id === id; });
+            if (!notif) return;
+
+            notif.read = true;
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+            loadNotifications();
+        }
+
+        // =============================================
+        // REMOVE NOTIFICATION
+        // =============================================
+        function removeNotification(id) {
+            if (confirm('Remove this notification?')) {
+                var notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+                notifications = notifications.filter(function(n) { return n.id !== id; });
+                localStorage.setItem('notifications', JSON.stringify(notifications));
+                loadNotifications();
+                showToast('🗑️ Notification removed');
+            }
+        }
+
+        // =============================================
+        // MARK ALL AS READ
+        // =============================================
+        function markAllRead() {
+            var notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+            var unreadCount = notifications.filter(function(n) { return !n.read; }).length;
+
+            if (unreadCount === 0) {
+                showToast('📭 All notifications are already read');
+                return;
+            }
+
+            notifications.forEach(function(n) { n.read = true; });
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+            loadNotifications();
+            showToast('✅ All notifications marked as read');
+        }
+
+        // =============================================
+        // CLEAR ALL
+        // =============================================
+        function clearAll() {
+            var notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+            if (notifications.length === 0) {
+                showToast('📭 No notifications to clear');
+                return;
+            }
+
+            if (confirm('Clear all notifications?')) {
+                localStorage.removeItem('notifications');
+                loadNotifications();
+                showToast('🗑️ All notifications cleared');
+            }
+        }
+
+        // =============================================
+        // SIDEBAR
+        // =============================================
+        function setupSidebar() {
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            var toggle = document.getElementById('menuToggle');
+            var collapseToggle = document.getElementById('collapseToggle');
+            var main = document.getElementById('mainContent');
+
+            function isMobile() {
+                return window.innerWidth < 768;
+            }
+
+            function toggleSidebar() {
+                if (isMobile()) {
+                    var isOpen = !sidebar.classList.contains('-translate-x-full');
+                    if (isOpen) {
+                        sidebar.classList.add('-translate-x-full');
+                        if (overlay) overlay.classList.add('hidden');
+                    } else {
+                        sidebar.classList.remove('-translate-x-full');
+                        if (overlay) overlay.classList.remove('hidden');
+                    }
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    if (sidebar.classList.contains('collapsed')) {
+                        sidebar.style.width = '64px';
+                        if (main) {
+                            main.classList.remove('md:ml-64');
+                            main.classList.add('md:ml-16');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">▶</span><span class="sidebar-text text-sm">Expand</span>';
+                        }
+                    } else {
+                        sidebar.style.width = '256px';
+                        if (main) {
+                            main.classList.remove('md:ml-16');
+                            main.classList.add('md:ml-64');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">◀</span><span class="sidebar-text text-sm">Collapse</span>';
+                        }
+                    }
+                }
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', toggleSidebar);
+            }
+
+            if (collapseToggle) {
+                collapseToggle.addEventListener('click', toggleSidebar);
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden');
+                });
+            }
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768) {
+                    sidebar.classList.remove('-translate-x-full');
+                    if (overlay) overlay.classList.add('hidden');
+                    if (!sidebar.classList.contains('collapsed')) {
+                        sidebar.style.width = '256px';
+                        if (main) {
+                            main.classList.remove('md:ml-16');
+                            main.classList.add('md:ml-64');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">◀</span><span class="sidebar-text text-sm">Collapse</span>';
+                        }
+                    } else {
+                        sidebar.style.width = '64px';
+                        if (main) {
+                            main.classList.remove('md:ml-64');
+                            main.classList.add('md:ml-16');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">▶</span><span class="sidebar-text text-sm">Expand</span>';
+                        }
+                    }
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebar.classList.remove('collapsed');
+                    sidebar.style.width = '256px';
+                    if (main) {
+                        main.classList.remove('md:ml-64', 'md:ml-16');
+                    }
+                    if (overlay) overlay.classList.add('hidden');
+                }
+            });
+
+            if (window.innerWidth < 768) {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('collapsed');
+                sidebar.style.width = '256px';
+                if (main) {
+                    main.classList.remove('md:ml-64', 'md:ml-16');
+                }
+            } else {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.remove('collapsed');
+                sidebar.style.width = '256px';
+                if (main) {
+                    main.classList.remove('md:ml-16');
+                    main.classList.add('md:ml-64');
+                }
+            }
+        }
+
+        // =============================================
+        // INITIALIZE
+        // =============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNotifications();
+            setupSidebar();
+
+            // Tabs
+            document.querySelectorAll('.notification-tab').forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.notification-tab').forEach(function(t) {
+                        t.classList.remove('active');
+                    });
+                    this.classList.add('active');
+                    currentFilter = this.dataset.filter;
+                    loadNotifications();
+                });
+            });
+
+            // Mark all read
+            document.getElementById('markAllBtn').addEventListener('click', markAllRead);
+
+            // Clear all
+            document.getElementById('clearAllBtn').addEventListener('click', clearAll);
+        });
+    </script>
+
+</body>
+</html>

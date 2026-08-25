@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Upload Video - YouTube</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #606060; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #808080; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .sidebar-transition {
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #606060; border-radius: 2px; }
+        .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+
+        #sidebar.collapsed .sidebar-text { display: none; }
+        #sidebar.collapsed .sidebar-icon { margin-right: 0; }
+        #sidebar.collapsed .sidebar-item { justify-content: center; padding: 8px 12px; }
+        #sidebar.collapsed .sidebar-heading { display: none; }
+        #sidebar.collapsed .sidebar-divider { display: none; }
+
+        .collapse-toggle { display: none; }
+        @media (min-width: 768px) {
+            .collapse-toggle { display: flex; }
+        }
+
+        .thumbnail-upload-area {
+            cursor: pointer;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .thumbnail-preview {
+            background: #1a1a1a;
+            border: 2px dashed #303030;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            transition: all 0.3s;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .thumbnail-preview:hover {
+            border-color: #3ea6ff;
+            background: #1a1a3e;
+        }
+        .thumbnail-preview .upload-icon {
+            font-size: 48px;
+        }
+        .thumbnail-preview p {
+            margin: 0;
+            color: #f1f1f1;
+            font-size: 14px;
+        }
+        .thumbnail-preview small {
+            color: #888;
+            font-size: 12px;
+        }
+        .thumbnail-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .form-input {
+            background: #1a1a1a;
+            border: 1px solid #303030;
+            border-radius: 8px;
+            color: #f1f1f1;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            width: 100%;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #3ea6ff;
+        }
+        .form-input::placeholder {
+            color: #666;
+        }
+        textarea.form-input {
+            resize: vertical;
+            min-height: 100px;
+        }
+        select.form-input {
+            appearance: none;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            color: #f1f1f1;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 1px solid #272727;
+            font-size: 14px;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; pointer-events: auto; }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ==========================================
+    HEADER
+    ========================================== -->
+    <header class="fixed top-0 left-0 right-0 z-50 h-14 bg-[#0f0f0f] border-b border-[#272727] flex items-center justify-between px-4">
+        <div class="flex items-center gap-4">
+            <button id="menuToggle" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full">☰</button>
+            <a href="index.html" class="flex items-center gap-1 text-white font-bold text-xl">
+                <span class="text-red-600 text-2xl">▶</span>
+                <span>YouTube</span>
+            </a>
+        </div>
+        <div class="hidden md:flex flex-1 max-w-2xl mx-4">
+            <input type="text" placeholder="Search" class="flex-1 bg-[#121212] border border-[#303030] text-white px-4 py-2 rounded-l-full outline-none focus:border-blue-600" />
+            <button class="bg-[#222] border border-l-0 border-[#303030] px-6 rounded-r-full text-white hover:bg-[#2a2a2a]">🔍</button>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="create.html" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full hidden md:block bg-[#272727]">⊞</a>
+            <a href="notifications.html" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full hidden md:block">🔔</a>
+            <a href="profile.html" class="bg-blue-500 text-black w-8 h-8 rounded-full font-bold text-sm flex items-center justify-center hover:opacity-80">P</a>
+        </div>
+    </header>
+
+    <!-- ==========================================
+    SIDEBAR
+    ========================================== -->
+    <aside id="sidebar" class="fixed top-14 left-0 bottom-0 w-64 bg-[#0f0f0f] overflow-y-auto p-2 sidebar-scroll sidebar-transition z-40 border-r border-[#272727] -translate-x-full md:translate-x-0">
+        
+        <button id="collapseToggle" class="collapse-toggle items-center gap-2 w-full px-3 py-2 text-gray-400 hover:text-white hover:bg-[#272727] rounded-lg transition mb-2">
+            <span class="text-xl">◀</span>
+            <span class="sidebar-text text-sm">Collapse</span>
+        </button>
+
+        <nav class="space-y-1">
+            <a href="index.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">⌂</span>
+                <span class="sidebar-text text-sm">Home</span>
+            </a>
+            <a href="shorts-page.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▶</span>
+                <span class="sidebar-text text-sm">Shorts</span>
+            </a>
+            <a href="subscriptions.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▣</span>
+                <span class="sidebar-text text-sm">Subscriptions</span>
+            </a>
+            <hr class="sidebar-divider border-[#272727] my-2" />
+            <p class="sidebar-heading text-xs text-gray-500 px-3 py-2">YOU</p>
+            <a href="channel.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◉</span>
+                <span class="sidebar-text text-sm">Your channel</span>
+            </a>
+            <a href="history.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◷</span>
+                <span class="sidebar-text text-sm">History</span>
+            </a>
+            <a href="your-videos.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▣</span>
+                <span class="sidebar-text text-sm">Your videos</span>
+            </a>
+            <a href="watch-later.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◷</span>
+                <span class="sidebar-text text-sm">Watch later</span>
+            </a>
+            <a href="liked.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">♡</span>
+                <span class="sidebar-text text-sm">Liked videos</span>
+            </a>
+            <hr class="sidebar-divider border-[#272727] my-2" />
+            <p class="sidebar-heading text-xs text-gray-500 px-3 py-2">EXPLORE</p>
+            <a href="explore.html?category=trending" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">🔥</span>
+                <span class="sidebar-text text-sm">Trending</span>
+            </a>
+            <a href="explore.html?category=music" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">♫</span>
+                <span class="sidebar-text text-sm">Music</span>
+            </a>
+            <a href="explore.html?category=movies" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">🎬</span>
+                <span class="sidebar-text text-sm">Movies & TV</span>
+            </a>
+            <a href="explore.html?category=sports" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">⚽</span>
+                <span class="sidebar-text text-sm">Sports</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+
+    <!-- ==========================================
+    MAIN CONTENT - CREATE
+    ========================================== -->
+    <main id="mainContent" class="mt-14 p-4 bg-[#0f0f0f] min-h-screen text-white transition-all duration-300 md:ml-64">
+
+        <div class="max-w-3xl mx-auto">
+
+            <!-- Header -->
+            <div class="pb-4 border-b border-[#272727] mb-6">
+                <h1 class="text-2xl font-medium">
+                    <i class="fas fa-upload text-blue-500 mr-2"></i>Upload Video
+                </h1>
+                <p class="text-sm text-gray-400 mt-1">Share your content with the world</p>
+            </div>
+
+            <!-- Upload Form -->
+            <form id="uploadForm" class="space-y-6">
+
+                <!-- Thumbnail -->
+                <div>
+                    <label class="block text-sm font-medium mb-2">Thumbnail</label>
+                    <div class="thumbnail-upload-area" id="thumbnailArea">
+                        <div class="thumbnail-preview" id="thumbnailPreview">
+                            <span class="upload-icon">🖼️</span>
+                            <p>Click to upload thumbnail</p>
+                            <small>JPG, PNG, or GIF • Max 2MB</small>
+                        </div>
+                        <input type="file" id="thumbnailInput" accept="image/*" style="display:none;">
+                    </div>
+                </div>
+
+                <!-- Video URL -->
+                <div>
+                    <label for="videoUrlInput" class="block text-sm font-medium mb-2">YouTube Video URL</label>
+                    <input type="url" id="videoUrlInput" placeholder="https://youtu.be/XXXXXXXXXXX" class="form-input">
+                    <p class="text-xs text-gray-400 mt-1">Paste your YouTube video URL here</p>
+                </div>
+
+                <!-- Title -->
+                <div>
+                    <label for="titleInput" class="block text-sm font-medium mb-2">Video Title</label>
+                    <input type="text" id="titleInput" placeholder="Enter video title..." class="form-input">
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label for="descriptionInput" class="block text-sm font-medium mb-2">Description</label>
+                    <textarea id="descriptionInput" rows="4" placeholder="What is your video about?..." class="form-input"></textarea>
+                </div>
+
+                <!-- Category -->
+                <div>
+                    <label for="categorySelect" class="block text-sm font-medium mb-2">Category</label>
+                    <select id="categorySelect" class="form-input">
+                        <option value="Music">Music</option>
+                        <option value="Gaming">Gaming</option>
+                        <option value="News">News</option>
+                        <option value="Sports">Sports</option>
+                        <option value="Live">Live</option>
+                        <option value="Mixes">Mixes</option>
+                        <option value="Podcasts">Podcasts</option>
+                        <option value="Movies">Movies & TV</option>
+                    </select>
+                </div>
+
+                <!-- Duration -->
+                <div>
+                    <label for="durationInput" class="block text-sm font-medium mb-2">Duration (e.g., 5:30)</label>
+                    <input type="text" id="durationInput" placeholder="5:30" class="form-input">
+                </div>
+
+                <!-- Tags -->
+                <div>
+                    <label for="tagsInput" class="block text-sm font-medium mb-2">Tags (comma separated)</label>
+                    <input type="text" id="tagsInput" placeholder="tutorial, howto, guide" class="form-input">
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="flex gap-4 pt-4 border-t border-[#272727]">
+                    <button type="button" id="cancelBtn" class="flex-1 px-6 py-2 bg-[#272727] text-white rounded-full hover:bg-[#3a3a3a] transition">
+                        Cancel
+                    </button>
+                    <button type="submit" id="submitBtn" class="flex-1 px-6 py-2 bg-blue-500 text-black rounded-full font-medium hover:bg-blue-400 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-upload"></i> Upload Video
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+
+    </main>
+
+    <!-- ==========================================
+    JAVASCRIPT
+    ========================================== -->
+    <script>
+        // =============================================
+        // TOAST
+        // =============================================
+        function showToast(message) {
+            var toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(function() {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // =============================================
+        // THUMBNAIL UPLOAD
+        // =============================================
+        var thumbnailData = null;
+
+        function setupThumbnailUpload() {
+            var area = document.getElementById('thumbnailArea');
+            var input = document.getElementById('thumbnailInput');
+            var preview = document.getElementById('thumbnailPreview');
+
+            area.addEventListener('click', function() {
+                input.click();
+            });
+
+            input.addEventListener('change', function(e) {
+                var file = this.files[0];
+                if (file) {
+                    var reader = new FileReader();
+                    reader.onload = function(event) {
+                        thumbnailData = event.target.result;
+                        preview.innerHTML = '<img src="' + thumbnailData + '" alt="Thumbnail" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">';
+                        preview.style.background = 'transparent';
+                        preview.style.border = 'none';
+                        preview.style.padding = '0';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Drag and drop
+            area.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#3ea6ff';
+                this.style.background = '#1a1a3e';
+            });
+
+            area.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#303030';
+                this.style.background = 'transparent';
+            });
+
+            area.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#303030';
+                this.style.background = 'transparent';
+                var file = e.dataTransfer.files[0];
+                if (file) {
+                    var reader = new FileReader();
+                    reader.onload = function(event) {
+                        thumbnailData = event.target.result;
+                        preview.innerHTML = '<img src="' + thumbnailData + '" alt="Thumbnail" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">';
+                        preview.style.background = 'transparent';
+                        preview.style.border = 'none';
+                        preview.style.padding = '0';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // =============================================
+        // UPLOAD VIDEO
+        // =============================================
+        function uploadVideo() {
+            var title = document.getElementById('titleInput').value.trim();
+            var description = document.getElementById('descriptionInput').value.trim();
+            var videoUrl = document.getElementById('videoUrlInput').value.trim();
+            var category = document.getElementById('categorySelect').value;
+            var duration = document.getElementById('durationInput').value.trim() || '5:00';
+            var tags = document.getElementById('tagsInput').value.trim();
+
+            // Validate
+            if (!title) {
+                showToast('⚠️ Please enter a title.');
+                document.getElementById('titleInput').focus();
+                return;
+            }
+
+            if (!videoUrl) {
+                showToast('⚠️ Please enter a YouTube video URL.');
+                document.getElementById('videoUrlInput').focus();
+                return;
+            }
+
+            // Validate YouTube URL
+            var youtubePattern = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/;
+            var match = videoUrl.match(youtubePattern);
+            if (!match) {
+                showToast('⚠️ Please enter a valid YouTube URL.\n\nExample: https://youtu.be/XXXXXXXXXXX');
+                document.getElementById('videoUrlInput').focus();
+                return;
+            }
+
+            var videoId = match[1];
+
+            // Get channel data
+            var channelData = JSON.parse(localStorage.getItem('channelData')) || {
+                name: 'Your Channel',
+                avatar: 'Y'
+            };
+
+            // Create thumbnail URL
+            var thumbnail = thumbnailData || 'https://i.ytimg.com/vi/' + videoId + '/hqdefault.jpg';
+
+            // Create video object
+            var newVideo = {
+                id: Date.now(),
+                title: title,
+                channel: channelData.name,
+                avatar: channelData.avatar || 'Y',
+                description: description || 'No description.',
+                thumbnail: thumbnail,
+                duration: duration,
+                category: category,
+                views: '0',
+                uploaded: 'Just now',
+                url: videoUrl,
+                tags: tags ? tags.split(',').map(function(t) { return t.trim(); }) : [],
+                uploadedAt: new Date().toISOString()
+            };
+
+            // Save to localStorage
+            var userVideos = JSON.parse(localStorage.getItem('userVideos')) || [];
+            userVideos.unshift(newVideo);
+            localStorage.setItem('userVideos', JSON.stringify(userVideos));
+
+            // Show success
+            showToast('✅ Video uploaded successfully!');
+
+            // Redirect to your videos page
+            setTimeout(function() {
+                window.location.href = 'your-videos.html';
+            }, 1500);
+        }
+
+        // =============================================
+        // RESET FORM
+        // =============================================
+        function resetForm() {
+            document.getElementById('titleInput').value = '';
+            document.getElementById('descriptionInput').value = '';
+            document.getElementById('videoUrlInput').value = '';
+            document.getElementById('durationInput').value = '';
+            document.getElementById('tagsInput').value = '';
+            document.getElementById('categorySelect').value = 'Music';
+
+            thumbnailData = null;
+            var preview = document.getElementById('thumbnailPreview');
+            preview.innerHTML = '<span class="upload-icon">🖼️</span><p>Click to upload thumbnail</p><small>JPG, PNG, or GIF • Max 2MB</small>';
+            preview.style.background = '#1a1a1a';
+            preview.style.border = '2px dashed #303030';
+            preview.style.padding = '40px 20px';
+        }
+
+        // =============================================
+        // SIDEBAR
+        // =============================================
+        function setupSidebar() {
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            var toggle = document.getElementById('menuToggle');
+            var collapseToggle = document.getElementById('collapseToggle');
+            var main = document.getElementById('mainContent');
+
+            function isMobile() {
+                return window.innerWidth < 768;
+            }
+
+            function toggleSidebar() {
+                if (isMobile()) {
+                    var isOpen = !sidebar.classList.contains('-translate-x-full');
+                    if (isOpen) {
+                        sidebar.classList.add('-translate-x-full');
+                        if (overlay) overlay.classList.add('hidden');
+                    } else {
+                        sidebar.classList.remove('-translate-x-full');
+                        if (overlay) overlay.classList.remove('hidden');
+                    }
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    if (sidebar.classList.contains('collapsed')) {
+                        sidebar.style.width = '64px';
+                        if (main) {
+                            main.classList.remove('md:ml-64');
+                            main.classList.add('md:ml-16');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">▶</span><span class="sidebar-text text-sm">Expand</span>';
+                        }
+                    } else {
+                        sidebar.style.width = '256px';
+                        if (main) {
+                            main.classList.remove('md:ml-16');
+                            main.classList.add('md:ml-64');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">◀</span><span class="sidebar-text text-sm">Collapse</span>';
+                        }
+                    }
+                }
+            }
+
+            if (toggle) {
+                toggle.addEventListener('click', toggleSidebar);
+            }
+
+            if (collapseToggle) {
+                collapseToggle.addEventListener('click', toggleSidebar);
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden');
+                });
+            }
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768) {
+                    sidebar.classList.remove('-translate-x-full');
+                    if (overlay) overlay.classList.add('hidden');
+                    if (!sidebar.classList.contains('collapsed')) {
+                        sidebar.style.width = '256px';
+                        if (main) {
+                            main.classList.remove('md:ml-16');
+                            main.classList.add('md:ml-64');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">◀</span><span class="sidebar-text text-sm">Collapse</span>';
+                        }
+                    } else {
+                        sidebar.style.width = '64px';
+                        if (main) {
+                            main.classList.remove('md:ml-64');
+                            main.classList.add('md:ml-16');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">▶</span><span class="sidebar-text text-sm">Expand</span>';
+                        }
+                    }
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebar.classList.remove('collapsed');
+                    sidebar.style.width = '256px';
+                    if (main) {
+                        main.classList.remove('md:ml-64', 'md:ml-16');
+                    }
+                    if (overlay) overlay.classList.add('hidden');
+                }
+            });
+
+            if (window.innerWidth < 768) {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('collapsed');
+                sidebar.style.width = '256px';
+                if (main) {
+                    main.classList.remove('md:ml-64', 'md:ml-16');
+                }
+            } else {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.remove('collapsed');
+                sidebar.style.width = '256px';
+                if (main) {
+                    main.classList.remove('md:ml-16');
+                    main.classList.add('md:ml-64');
+                }
+            }
+        }
+
+        // =============================================
+        // INITIALIZE
+        // =============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            setupThumbnailUpload();
+            setupSidebar();
+
+            // Cancel button
+            document.getElementById('cancelBtn').addEventListener('click', function() {
+                if (confirm('Are you sure you want to cancel? Your progress will be lost.')) {
+                    resetForm();
+                    window.location.href = 'index.html';
+                }
+            });
+
+            // Submit form
+            document.getElementById('uploadForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                uploadVideo();
+            });
+        });
+    </script>
+
+</body>
+</html>

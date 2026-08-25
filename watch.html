@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Watch - YouTube</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #606060; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #808080; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar-transition {
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #606060; border-radius: 2px; }
+        .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+
+        /* Sidebar collapsed state */
+        #sidebar.collapsed .sidebar-text { display: none; }
+        #sidebar.collapsed .sidebar-icon { margin-right: 0; }
+        #sidebar.collapsed .sidebar-item { justify-content: center; padding: 8px 12px; }
+        #sidebar.collapsed .sidebar-heading { display: none; }
+        #sidebar.collapsed .sidebar-divider { display: none; }
+        #sidebar.collapsed .sidebar-hide-on-collapse { display: none; }
+
+        /* Hide collapse toggle on mobile */
+        .collapse-toggle { display: none; }
+        @media (min-width: 768px) {
+            .collapse-toggle { display: flex; }
+        }
+
+        .btn-icon {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 9999px;
+            background: #272727;
+            color: #f1f1f1;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .btn-icon:hover { background: #3a3a3a; }
+        .btn-icon.active { background: #3ea6ff; color: #0f0f0f; }
+        .btn-icon.active i { color: #0f0f0f; }
+        .btn-icon.subscribed { background: #272727; color: #f1f1f1; }
+        .btn-icon.subscribed i { color: #f1f1f1; }
+        .btn-icon.added { background: #3ea6ff; color: #0f0f0f; }
+        .btn-icon.added i { color: #0f0f0f; }
+
+        .subscribe-btn { background: #cc0000; }
+        .subscribe-btn:hover { background: #dd0000; }
+        .subscribe-btn.subscribed { background: #272727; }
+        .subscribe-btn.subscribed:hover { background: #3a3a3a; }
+
+        .share-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: #1a1a1a;
+            border: 1px solid #272727;
+            border-radius: 12px;
+            padding: 8px 0;
+            min-width: 200px;
+            display: none;
+            z-index: 50;
+        }
+        .share-dropdown.show { display: block; }
+        .share-dropdown a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            color: #f1f1f1;
+            text-decoration: none;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+        .share-dropdown a:hover { background: #272727; }
+        .share-dropdown a i { width: 20px; text-align: center; }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            color: #f1f1f1;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 1px solid #272727;
+            font-size: 14px;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; pointer-events: auto; }
+
+        .comment-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        .comment-item {
+            display: flex;
+            gap: 16px;
+            padding: 12px 0;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .comment-item .comment-avatar { width: 36px; height: 36px; font-size: 14px; }
+        .comment-content { flex: 1; min-width: 0; }
+        .comment-user { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; }
+        .comment-user strong { font-size: 13px; font-weight: 500; color: #f1f1f1; }
+        .comment-user span { font-size: 12px; color: #888; }
+        .comment-content p { font-size: 14px; color: #f1f1f1; margin: 0 0 6px 0; line-height: 1.4; }
+        .comment-actions-row { display: flex; gap: 12px; align-items: center; }
+        .comment-actions-row button {
+            background: none; border: none; color: #888; font-size: 13px;
+            cursor: pointer; padding: 4px 8px; border-radius: 4px;
+            transition: all 0.2s; display: flex; align-items: center; gap: 4px;
+        }
+        .comment-actions-row button:hover { background: #272727; color: #f1f1f1; }
+        .comment-actions-row button.liked { color: #3ea6ff; }
+        .comment-delete-btn:hover { color: #cc0000 !important; }
+        .no-comments { text-align: center; padding: 20px; color: #888; font-size: 14px; }
+        .comment-input-wrapper { flex: 1; }
+        .comment-input-wrapper input {
+            width: 100%; background: transparent; border: none;
+            border-bottom: 1px solid #303030; color: #f1f1f1;
+            padding: 8px 0; font-size: 14px; outline: none;
+            transition: border-color 0.2s;
+        }
+        .comment-input-wrapper input:focus { border-bottom-color: #3ea6ff; }
+        .comment-input-wrapper input::placeholder { color: #888; }
+        .comment-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+        .comment-submit-btn {
+            background: #3ea6ff; border: none; color: #0f0f0f;
+            padding: 6px 16px; border-radius: 20px; cursor: pointer;
+            font-size: 13px; font-weight: 500; transition: background 0.2s;
+        }
+        .comment-submit-btn:hover { background: #65b8ff; }
+        .comment-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ==========================================
+    HEADER
+    ========================================== -->
+    <header class="fixed top-0 left-0 right-0 z-50 h-14 bg-[#0f0f0f] border-b border-[#272727] flex items-center justify-between px-4">
+        <div class="flex items-center gap-4">
+            <button id="menuToggle" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full">☰</button>
+            <a href="index.html" class="flex items-center gap-1 text-white font-bold text-xl">
+                <span class="text-red-600 text-2xl">▶</span>
+                <span>YouTube</span>
+            </a>
+        </div>
+        <div class="hidden md:flex flex-1 max-w-2xl mx-4">
+            <input type="text" placeholder="Search" class="flex-1 bg-[#121212] border border-[#303030] text-white px-4 py-2 rounded-l-full outline-none focus:border-blue-600" />
+            <button class="bg-[#222] border border-l-0 border-[#303030] px-6 rounded-r-full text-white hover:bg-[#2a2a2a]">🔍</button>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="create.html" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full hidden md:block">⊞</a>
+            <a href="notifications.html" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full hidden md:block">🔔</a>
+            <a href="profile.html" class="bg-blue-500 text-black w-8 h-8 rounded-full font-bold text-sm flex items-center justify-center hover:opacity-80">P</a>
+        </div>
+    </header>
+
+    <!-- ==========================================
+    SIDEBAR - COLLAPSIBLE
+    ========================================== -->
+    <aside id="sidebar" class="fixed top-14 left-0 bottom-0 w-64 bg-[#0f0f0f] overflow-y-auto p-2 sidebar-scroll sidebar-transition z-40 border-r border-[#272727] -translate-x-full md:translate-x-0">
+        
+        <!-- Collapse Toggle (Desktop only) -->
+        <button id="collapseToggle" class="collapse-toggle items-center gap-2 w-full px-3 py-2 text-gray-400 hover:text-white hover:bg-[#272727] rounded-lg transition mb-2">
+            <span class="text-xl">◀</span>
+            <span class="sidebar-text text-sm">Collapse</span>
+        </button>
+
+        <nav class="space-y-1">
+            <a href="index.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">⌂</span>
+                <span class="sidebar-text text-sm">Home</span>
+            </a>
+            <a href="shorts-page.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▶</span>
+                <span class="sidebar-text text-sm">Shorts</span>
+            </a>
+            <a href="subscriptions.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▣</span>
+                <span class="sidebar-text text-sm">Subscriptions</span>
+            </a>
+            <hr class="sidebar-divider border-[#272727] my-2" />
+            <p class="sidebar-heading text-xs text-gray-500 px-3 py-2">YOU</p>
+            <a href="channel.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◉</span>
+                <span class="sidebar-text text-sm">Your channel</span>
+            </a>
+            <a href="history.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◷</span>
+                <span class="sidebar-text text-sm">History</span>
+            </a>
+            <a href="your-videos.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▣</span>
+                <span class="sidebar-text text-sm">Your videos</span>
+            </a>
+            <a href="watch-later.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◷</span>
+                <span class="sidebar-text text-sm">Watch later</span>
+            </a>
+            <a href="liked.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">♡</span>
+                <span class="sidebar-text text-sm">Liked videos</span>
+            </a>
+            <hr class="sidebar-divider border-[#272727] my-2" />
+            <p class="sidebar-heading text-xs text-gray-500 px-3 py-2">EXPLORE</p>
+            <a href="explore.html?category=trending" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">🔥</span>
+                <span class="sidebar-text text-sm">Trending</span>
+            </a>
+            <a href="explore.html?category=music" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">♫</span>
+                <span class="sidebar-text text-sm">Music</span>
+            </a>
+            <a href="explore.html?category=movies" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">🎬</span>
+                <span class="sidebar-text text-sm">Movies & TV</span>
+            </a>
+            <a href="explore.html?category=sports" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">⚽</span>
+                <span class="sidebar-text text-sm">Sports</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+
+    <!-- ==========================================
+    MAIN CONTENT
+    ========================================== -->
+    <main id="mainContent" class="mt-14 p-4 bg-[#0f0f0f] min-h-screen text-white transition-all duration-300 md:ml-64">
+
+        <div class="max-w-6xl mx-auto">
+
+            <!-- Video Player -->
+            <div class="aspect-video bg-black rounded-xl overflow-hidden">
+                <iframe id="videoIframe" class="w-full h-full" src="" frameborder="0" allowfullscreen></iframe>
+            </div>
+
+            <!-- Video Info -->
+            <div class="mt-4">
+                <h1 id="videoTitle" class="text-xl font-medium">Loading...</h1>
+
+                <!-- Video Meta Row -->
+                <div class="flex flex-wrap items-center justify-between gap-4 mt-2 pb-4 border-b border-[#272727]">
+                    <div class="flex items-center gap-2 text-sm text-gray-400">
+                        <span id="videoViews">0 views</span>
+                        <span>•</span>
+                        <span id="videoUploaded">0 days ago</span>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button id="likeBtn" class="btn-icon">
+                            <i class="fas fa-thumbs-up"></i> <span id="likeCount">0</span>
+                        </button>
+                        <button id="dislikeBtn" class="btn-icon">
+                            <i class="fas fa-thumbs-down"></i> <span id="dislikeCount">0</span>
+                        </button>
+                        <div class="relative">
+                            <button id="shareBtn" class="btn-icon">
+                                <i class="fas fa-share-alt"></i> Share
+                            </button>
+                            <div id="shareDropdown" class="share-dropdown">
+                                <a href="#" data-share="facebook"><i class="fab fa-facebook" style="color:#1877f2;"></i> Facebook</a>
+                                <a href="#" data-share="twitter"><i class="fab fa-twitter" style="color:#000;"></i> Twitter</a>
+                                <a href="#" data-share="whatsapp"><i class="fab fa-whatsapp" style="color:#25d366;"></i> WhatsApp</a>
+                                <a href="#" data-share="copy"><i class="fas fa-link"></i> Copy Link</a>
+                            </div>
+                        </div>
+                        <button id="downloadBtn" class="btn-icon">
+                            <i class="fas fa-download"></i> Download
+                        </button>
+                        <button id="watchLaterBtn" class="btn-icon">
+                            <i class="fas fa-clock"></i> <span id="watchLaterText">Watch Later</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Channel Info -->
+                <div class="flex flex-wrap items-center gap-4 py-4 border-b border-[#272727]">
+                    <div id="channelAvatar" class="w-10 h-10 rounded-full bg-blue-500 text-black flex items-center justify-center font-bold text-lg">C</div>
+                    <div class="flex-1">
+                        <h3 id="channelName" class="font-medium">Channel Name</h3>
+                        <p id="subscriberCount" class="text-xs text-gray-400">0 subscribers</p>
+                    </div>
+                    <button id="subscribeBtn" class="btn-icon subscribe-btn">
+                        <i class="fas fa-bell"></i> <span id="subscribeText">Subscribe</span>
+                    </button>
+                </div>
+
+                <!-- Description -->
+                <div id="videoDescription" class="bg-[#1a1a1a] p-4 rounded-xl text-sm text-gray-300 mt-4">
+                    No description available.
+                </div>
+
+                <!-- Comments -->
+                <div class="mt-6">
+                    <div class="flex items-center gap-4 mb-4">
+                        <h3 class="text-lg font-medium" id="commentCount">0 Comments</h3>
+                    </div>
+
+                    <div class="flex gap-3 items-start mb-4">
+                        <div id="commentUserAvatar" class="comment-avatar bg-blue-500 text-black flex-shrink-0">Y</div>
+                        <div class="comment-input-wrapper">
+                            <input type="text" id="commentInput" placeholder="Add a comment..." />
+                            <div class="comment-actions">
+                                <button id="cancelCommentBtn" class="text-gray-400 hover:text-white text-sm font-medium px-4 py-1 rounded-full hover:bg-[#272727] transition">Cancel</button>
+                                <button id="submitCommentBtn" class="comment-submit-btn" disabled>Comment</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="commentsList" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ==========================================
+    JAVASCRIPT
+    ========================================== -->
+    <script>
+        // =============================================
+        // DATA
+        // =============================================
+        const videos = [
+            { id: 1, title: "Davido - AWAY (Official Video)", channel: "Davido", avatar: "D", views: "N/A", uploaded: "N/A", thumbnail: "https://i.ytimg.com/vi/SbgKpHi-Cao/hqdefault.jpg", category: "music", duration: "TBD", url: "https://youtu.be/SbgKpHi-Cao", description: "Davido's official music video for 'AWAY'." },
+            { id: 2, title: "Rihanna - Umbrella (Orange Version) ft. JAY-Z", channel: "Rihanna", avatar: "R", views: "1.2B", uploaded: "15 years ago", thumbnail: "https://i.ytimg.com/vi/CvBfHwUxHIk/hqdefault.jpg", category: "music", duration: "4:23", url: "https://youtu.be/CvBfHwUxHIk", description: "Rihanna's official music video for 'Umbrella' featuring JAY-Z." },
+            { id: 3, title: "Ed Sheeran - Shape Of You", channel: "Ed Sheeran", avatar: "E", views: "3.5B", uploaded: "4 years ago", thumbnail: "https://i.ytimg.com/vi/JGwWNGJdvx8/hqdefault.jpg", category: "music", duration: "4:24", url: "https://youtu.be/JGwWNGJdvx8", description: "Ed Sheeran's official music video for 'Shape Of You'." },
+            { id: 4, title: "Adele - Someone Like You", channel: "Adele", avatar: "A", views: "2.8B", uploaded: "6 years ago", thumbnail: "https://i.ytimg.com/vi/hLQl3WQQoQ0/hqdefault.jpg", category: "music", duration: "4:47", url: "https://youtu.be/hLQl3WQQoQ0", description: "Adele's official music video for 'Someone Like You'." },
+            { id: 5, title: "Bruno Mars - Just The Way You Are", channel: "Bruno Mars", avatar: "B", views: "2.1B", uploaded: "5 years ago", thumbnail: "https://i.ytimg.com/vi/LjhCEhWiKXk/hqdefault.jpg", category: "music", duration: "3:42", url: "https://youtu.be/LjhCEhWiKXk", description: "Bruno Mars' official music video for 'Just The Way You Are'." },
+            { id: 6, title: "Taylor Swift - Anti-Hero", channel: "Taylor Swift", avatar: "T", views: "650M", uploaded: "2 years ago", thumbnail: "https://i.ytimg.com/vi/b1kbLwvqugk/hqdefault.jpg", category: "music", duration: "4:14", url: "https://youtu.be/b1kbLwvqugk", description: "Taylor Swift's official music video for 'Anti-Hero'." },
+            { id: 7, title: "Minecraft But I Can't Stop Jumping...", channel: "Dream", avatar: "D", views: "45M", uploaded: "2 years ago", thumbnail: "https://i.ytimg.com/vi/6ZfuNTqbHE8/hqdefault.jpg", category: "gaming", duration: "18:23", url: "https://youtu.be/6ZfuNTqbHE8", description: "Dream plays Minecraft with a twist - he can't stop jumping!" },
+            { id: 8, title: "How to Make Learning Addictive | TED", channel: "TED", avatar: "T", views: "11M", uploaded: "1 year ago", thumbnail: "https://i.ytimg.com/vi/P6FORpg0KVo/hqdefault.jpg", category: "news", duration: "12:45", url: "https://youtu.be/P6FORpg0KVo", description: "Luis Von Ahn on how to make learning as addictive as social media." },
+            { id: 9, title: "48 Laws of Power Book Summary", channel: "Thinking Shelf Lab", avatar: "T", views: "559K", uploaded: "4 months ago", thumbnail: "https://i.ytimg.com/vi/taRTn9qpSH4/hqdefault.jpg", category: "news", duration: "12:30", url: "https://youtu.be/taRTn9qpSH4", description: "A summary of the 48 Laws of Power by Robert Greene." },
+            { id: 10, title: "The Great Depression Explained Like You're 5", channel: "Crayon Capital", avatar: "C", views: "1.8M", uploaded: "1 year ago", thumbnail: "https://i.ytimg.com/vi/LuEcoqizj0o/hqdefault.jpg", category: "news", duration: "16:30", url: "https://youtu.be/LuEcoqizj0o", description: "A simple explanation of the Great Depression." },
+            { id: 11, title: "Late Szoboszlai Penalty! Newcastle 2-2 Liverpool | Highlights", channel: "Liverpool FC", avatar: "L", views: "761K", uploaded: "19 hours ago", thumbnail: "https://i.ytimg.com/vi/H9SErdAUTmE/hqdefault.jpg", category: "sports", duration: "10:30", url: "https://youtu.be/H9SErdAUTmE", description: "Highlights from the Premier League match between Newcastle United and Liverpool." },
+            { id: 12, title: "Pep Guardiola: Rewriting Football Rules", channel: "BBC Football", avatar: "B", views: "662K", uploaded: "3 months ago", thumbnail: "https://i.ytimg.com/vi/sA4_o-qDcNs/hqdefault.jpg", category: "sports", duration: "22:10", url: "https://youtu.be/sA4_o-qDcNs", description: "How Pep Guardiola changed the game of football." },
+            { id: 13, title: "BLAQBONEZ & ODUMODUBLVCK'S FEUD", channel: "Nevon HQ", avatar: "N", views: "248K", uploaded: "2 days ago", thumbnail: "https://i.ytimg.com/vi/lvkpeZJVfsc/hqdefault.jpg", category: "music", duration: "15:20", url: "https://youtu.be/lvkpeZJVfsc", description: "The story behind Blaqbonez and Odumodublvck's feud." },
+            { id: 14, title: "BOVI AT DAYSTAR CHRISTIAN CENTRE", channel: "GospelTech Tv", avatar: "G", views: "320K", uploaded: "3 months ago", thumbnail: "https://i.ytimg.com/vi/BKBdIepQB2E/hqdefault.jpg", category: "live", duration: "45:00", url: "https://youtu.be/BKBdIepQB2E", description: "Bovi's comedy performance at Daystar Christian Centre." },
+            { id: 15, title: "Project Manuscript II Assessment Guide", channel: "Rony OnlineGigs", avatar: "R", views: "477", uploaded: "19 hours ago", thumbnail: "https://i.ytimg.com/vi/BJDyuBhrVAk/hqdefault.jpg", category: "gaming", duration: "24:18", url: "https://youtu.be/BJDyuBhrVAk", description: "A step-by-step guide for Project Manuscript II assessment." },
+            { id: 16, title: "Psychology of Money in Just 10 Minutes", channel: "Becoming More", avatar: "B", views: "1.7M", uploaded: "1 year ago", thumbnail: "https://i.ytimg.com/vi/yhq1cPRHR6k/hqdefault.jpg", category: "live", duration: "10:00", url: "https://youtu.be/yhq1cPRHR6k", description: "The Psychology of Money by Morgan Housel summarized." },
+            { id: 17, title: "The Terrifying Paradox of Self-Awareness", channel: "Aperture", avatar: "A", views: "920K", uploaded: "5 months ago", thumbnail: "https://i.ytimg.com/vi/3x6hiS0E_7w/hqdefault.jpg", category: "news", duration: "14:30", url: "https://youtu.be/3x6hiS0E_7w", description: "A deep dive into the paradox of self-awareness." },
+            { id: 18, title: "How to Read Anyone Instantly", channel: "Thynksee", avatar: "T", views: "3.2M", uploaded: "1 year ago", thumbnail: "https://i.ytimg.com/vi/iYfPqg7aXH8/hqdefault.jpg", category: "news", duration: "18:45", url: "https://youtu.be/iYfPqg7aXH8", description: "Nietzsche's 18 psychological truths on how to read people." }
+        ];
+
+        // =============================================
+        // PRE-POPULATED DATA
+        // =============================================
+        const prePopulatedData = {
+            1: { likes: 42, dislikes: 3, comments: [
+                { username: "MusicLover", avatar: "M", text: "Davido never misses! 🔥", likes: 12, timeAgo: "2 hours ago" },
+                { username: "AfrobeatFan", avatar: "A", text: "This song is everything! ❤️", likes: 8, timeAgo: "5 hours ago" },
+                { username: "NigerianPrince", avatar: "N", text: "Best song of the year no cap", likes: 5, timeAgo: "1 day ago" }
+            ] },
+            2: { likes: 156, dislikes: 8, comments: [
+                { username: "ThrowbackQueen", avatar: "T", text: "This brings back so many memories 🥹", likes: 23, timeAgo: "3 hours ago" },
+                { username: "RihannaStan", avatar: "R", text: "Queen Rihanna forever! 👑", likes: 15, timeAgo: "6 hours ago" },
+                { username: "MusicHistorian", avatar: "H", text: "One of the greatest songs of all time.", likes: 9, timeAgo: "2 days ago" }
+            ] },
+            3: { likes: 89, dislikes: 5, comments: [
+                { username: "PopFan", avatar: "P", text: "This song never gets old! 🎵", likes: 10, timeAgo: "1 hour ago" },
+                { username: "EdSheeranFan", avatar: "E", text: "Ed is a genius songwriter.", likes: 7, timeAgo: "4 hours ago" },
+                { username: "MusicLover", avatar: "M", text: "Still one of the best pop songs ever.", likes: 4, timeAgo: "1 day ago" }
+            ] },
+            4: { likes: 203, dislikes: 12, comments: [
+                { username: "SoulfulHeart", avatar: "S", text: "This song makes me cry every time 😢", likes: 34, timeAgo: "2 hours ago" },
+                { username: "AdeleFan", avatar: "A", text: "Adele's voice is unmatched.", likes: 18, timeAgo: "7 hours ago" },
+                { username: "MusicTherapy", avatar: "M", text: "Healing through music. Thank you Adele.", likes: 11, timeAgo: "3 days ago" }
+            ] },
+            5: { likes: 67, dislikes: 4, comments: [
+                { username: "BrunoMarsFan", avatar: "B", text: "Bruno is so talented! 🎤", likes: 8, timeAgo: "3 hours ago" },
+                { username: "HappyVibes", avatar: "H", text: "This song always puts me in a good mood.", likes: 5, timeAgo: "6 hours ago" },
+                { username: "MusicLover", avatar: "M", text: "Classic Bruno Mars sound.", likes: 3, timeAgo: "2 days ago" }
+            ] },
+            6: { likes: 112, dislikes: 6, comments: [
+                { username: "SwiftieForever", avatar: "S", text: "Taylor never disappoints! 🐍", likes: 19, timeAgo: "1 hour ago" },
+                { username: "PopMusicFan", avatar: "P", text: "This song is so relatable.", likes: 11, timeAgo: "5 hours ago" },
+                { username: "Songwriter", avatar: "W", text: "Taylor's songwriting is on another level.", likes: 7, timeAgo: "1 day ago" }
+            ] },
+            7: { likes: 245, dislikes: 18, comments: [
+                { username: "GamerGirl", avatar: "G", text: "Dream is insane at Minecraft! 🎮", likes: 28, timeAgo: "2 hours ago" },
+                { username: "MinecraftFan", avatar: "M", text: "This was so entertaining to watch.", likes: 15, timeAgo: "4 hours ago" },
+                { username: "Speedrunner", avatar: "S", text: "The jumps are crazy! 😱", likes: 9, timeAgo: "1 day ago" }
+            ] },
+            8: { likes: 178, dislikes: 9, comments: [
+                { username: "EduLover", avatar: "E", text: "This TED talk changed my perspective.", likes: 22, timeAgo: "3 hours ago" },
+                { username: "StudentLife", avatar: "S", text: "We need more education like this.", likes: 14, timeAgo: "7 hours ago" },
+                { username: "Teacher", avatar: "T", text: "Every educator should watch this.", likes: 8, timeAgo: "2 days ago" }
+            ] },
+            9: { likes: 134, dislikes: 7, comments: [
+                { username: "BookWorm", avatar: "B", text: "48 Laws of Power is a must-read! 📚", likes: 16, timeAgo: "1 hour ago" },
+                { username: "PowerSeeker", avatar: "P", text: "Great summary of the key laws.", likes: 9, timeAgo: "5 hours ago" },
+                { username: "Thinker", avatar: "T", text: "Knowledge is power.", likes: 6, timeAgo: "3 days ago" }
+            ] },
+            10: { likes: 56, dislikes: 2, comments: [
+                { username: "HistoryBuff", avatar: "H", text: "This is such an important part of history.", likes: 7, timeAgo: "2 hours ago" },
+                { username: "Student", avatar: "S", text: "I finally understand the Great Depression!", likes: 4, timeAgo: "6 hours ago" },
+                { username: "Teacher", avatar: "T", text: "Great explanation for students.", likes: 2, timeAgo: "1 day ago" }
+            ] },
+            11: { likes: 321, dislikes: 22, comments: [
+                { username: "LiverpoolFan", avatar: "L", text: "YNWA! What a game! 🔴", likes: 45, timeAgo: "30 minutes ago" },
+                { username: "FootballFan", avatar: "F", text: "Szoboszlai is a beast! ⚽", likes: 28, timeAgo: "2 hours ago" },
+                { username: "PremierLeague", avatar: "P", text: "Best league in the world! 🔥", likes: 15, timeAgo: "4 hours ago" }
+            ] },
+            12: { likes: 89, dislikes: 4, comments: [
+                { username: "FootballFan", avatar: "F", text: "Pep is a tactical genius!", likes: 12, timeAgo: "3 hours ago" },
+                { username: "ManCityFan", avatar: "M", text: "The best manager in the world.", likes: 7, timeAgo: "6 hours ago" },
+                { username: "Coach", avatar: "C", text: "His methods changed modern football.", likes: 4, timeAgo: "2 days ago" }
+            ] },
+            13: { likes: 67, dislikes: 3, comments: [
+                { username: "AfrobeatFan", avatar: "A", text: "This beef is crazy! 🍿", likes: 9, timeAgo: "1 hour ago" },
+                { username: "MusicLover", avatar: "M", text: "I can't believe they used to be friends.", likes: 5, timeAgo: "4 hours ago" },
+                { username: "NigerianMusic", avatar: "N", text: "This is the biggest story in Afrobeats.", likes: 3, timeAgo: "1 day ago" }
+            ] },
+            14: { likes: 43, dislikes: 1, comments: [
+                { username: "GospelLover", avatar: "G", text: "Bovi always brings the laughter! 😂", likes: 6, timeAgo: "2 hours ago" },
+                { username: "ComedyFan", avatar: "C", text: "I love this man! So funny.", likes: 4, timeAgo: "5 hours ago" },
+                { username: "DaystarMember", avatar: "D", text: "This was such a great service.", likes: 2, timeAgo: "2 days ago" }
+            ] },
+            15: { likes: 12, dislikes: 0, comments: [
+                { username: "Newbie", avatar: "N", text: "This guide is so helpful! 🙏", likes: 2, timeAgo: "1 hour ago" },
+                { username: "Learner", avatar: "L", text: "Step by step made it so easy.", likes: 1, timeAgo: "3 hours ago" },
+                { username: "Student", avatar: "S", text: "Thanks for this! Really appreciate it.", likes: 0, timeAgo: "5 hours ago" }
+            ] },
+            16: { likes: 78, dislikes: 3, comments: [
+                { username: "MoneyMindset", avatar: "M", text: "Psychology is key to wealth! 💰", likes: 11, timeAgo: "2 hours ago" },
+                { username: "Investor", avatar: "I", text: "This is the most important video on money.", likes: 7, timeAgo: "6 hours ago" },
+                { username: "FinanceFan", avatar: "F", text: "I've read the book, this is a great summary.", likes: 4, timeAgo: "1 day ago" }
+            ] },
+            17: { likes: 92, dislikes: 5, comments: [
+                { username: "Philosopher", avatar: "P", text: "This is deep! 🤯", likes: 14, timeAgo: "1 hour ago" },
+                { username: "Thinker", avatar: "T", text: "Self-awareness is truly terrifying.", likes: 8, timeAgo: "4 hours ago" },
+                { username: "PsychologyFan", avatar: "P", text: "This channel always delivers.", likes: 5, timeAgo: "2 days ago" }
+            ] },
+            18: { likes: 145, dislikes: 8, comments: [
+                { username: "PsychologyFan", avatar: "P", text: "Nietzsche was ahead of his time!", likes: 21, timeAgo: "2 hours ago" },
+                { username: "Thinker", avatar: "T", text: "The 18 truths are so powerful.", likes: 13, timeAgo: "5 hours ago" },
+                { username: "Reader", avatar: "R", text: "This changed how I see people.", likes: 8, timeAgo: "3 days ago" }
+            ] }
+        };
+
+        // =============================================
+        // GET VIDEO ID
+        // =============================================
+        const videoId = localStorage.getItem('selectedVideoId') || 1;
+        const video = videos.find(v => v.id === parseInt(videoId)) || videos[0];
+
+        // =============================================
+        // GET YOUTUBE EMBED URL
+        // =============================================
+        function getEmbedUrl(url) {
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=)([^&]+)/,
+                /(?:youtu\.be\/)([^?]+)/
+            ];
+            for (const p of patterns) {
+                const match = url.match(p);
+                if (match) return `https://www.youtube.com/embed/${match[1]}?autoplay=1&rel=0`;
+            }
+            return '';
+        }
+
+        // =============================================
+        // TOAST
+        // =============================================
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // =============================================
+        // ADD NOTIFICATION - NEW
+        // =============================================
+        function addNotification(type, username, message, videoTitle, videoId) {
+            var notifications = JSON.parse(localStorage.getItem('notifications')) || [];
+            
+            var newNotification = {
+                id: Date.now(),
+                type: type,
+                username: username || 'Someone',
+                message: message,
+                videoTitle: videoTitle || null,
+                videoId: videoId || null,
+                read: false,
+                timestamp: new Date().toISOString()
+            };
+            
+            notifications.unshift(newNotification);
+            localStorage.setItem('notifications', JSON.stringify(notifications));
+            console.log('✅ Notification added:', newNotification);
+        }
+
+        // =============================================
+        // SAVE TO HISTORY
+        // =============================================
+        function saveToHistory(video) {
+            let history = JSON.parse(localStorage.getItem('watchHistory')) || [];
+            
+            // Remove if already exists
+            history = history.filter(item => item.id !== video.id);
+            
+            // Add to beginning
+            history.unshift({
+                id: video.id,
+                title: video.title,
+                channel: video.channel,
+                avatar: video.avatar,
+                thumbnail: video.thumbnail,
+                duration: video.duration,
+                watchedAt: new Date().toISOString()
+            });
+            
+            // Keep only last 50
+            if (history.length > 50) {
+                history = history.slice(0, 50);
+            }
+            
+            localStorage.setItem('watchHistory', JSON.stringify(history));
+            console.log('✅ Saved to history:', video.title);
+        }
+
+        // =============================================
+        // LOAD VIDEO
+        // =============================================
+        function loadVideo() {
+            const iframe = document.getElementById('videoIframe');
+            iframe.src = getEmbedUrl(video.url);
+
+            document.getElementById('videoTitle').textContent = video.title;
+            document.getElementById('videoViews').textContent = video.views + ' views';
+            document.getElementById('videoUploaded').textContent = video.uploaded;
+            document.getElementById('channelName').textContent = video.channel;
+            document.getElementById('channelAvatar').textContent = video.avatar;
+            document.getElementById('videoDescription').textContent = video.description || 'No description available.';
+
+            const subs = Math.floor(Math.random() * 1000000) + 1000;
+            document.getElementById('subscriberCount').textContent = subs.toLocaleString() + ' subscribers';
+
+            const userData = JSON.parse(localStorage.getItem('userData')) || { name: 'You', avatar: 'Y' };
+            document.getElementById('commentUserAvatar').textContent = userData.avatar || 'Y';
+
+            loadPrePopulatedData();
+            loadButtonStates();
+            loadComments();
+
+            // SAVE TO HISTORY
+            saveToHistory(video);
+        }
+
+        // =============================================
+        // PRE-POPULATED DATA
+        // =============================================
+        function loadPrePopulatedData() {
+            const data = prePopulatedData[video.id];
+            if (!data) return;
+
+            if (!localStorage.getItem('likeCount_' + video.id)) {
+                localStorage.setItem('likeCount_' + video.id, data.likes.toString());
+            }
+            if (!localStorage.getItem('dislikeCount_' + video.id)) {
+                localStorage.setItem('dislikeCount_' + video.id, data.dislikes.toString());
+            }
+            const existingComments = JSON.parse(localStorage.getItem('comments_' + video.id)) || [];
+            if (existingComments.length === 0 && data.comments) {
+                localStorage.setItem('comments_' + video.id, JSON.stringify(data.comments));
+            }
+        }
+
+        // =============================================
+        // BUTTON STATES
+        // =============================================
+        function loadButtonStates() {
+            const liked = localStorage.getItem('liked_' + video.id) === 'true';
+            const likeCount = parseInt(localStorage.getItem('likeCount_' + video.id)) || 0;
+            document.getElementById('likeCount').textContent = likeCount;
+            if (liked) document.getElementById('likeBtn').classList.add('active');
+
+            const disliked = localStorage.getItem('disliked_' + video.id) === 'true';
+            const dislikeCount = parseInt(localStorage.getItem('dislikeCount_' + video.id)) || 0;
+            document.getElementById('dislikeCount').textContent = dislikeCount;
+            if (disliked) document.getElementById('dislikeBtn').classList.add('active');
+
+            const subscribed = localStorage.getItem('subscribed_' + video.id) === 'true';
+            if (subscribed) {
+                document.getElementById('subscribeBtn').classList.add('subscribed');
+                document.getElementById('subscribeText').textContent = 'Subscribed';
+            }
+
+            const watchLater = JSON.parse(localStorage.getItem('watchLater')) || [];
+            const exists = watchLater.some(item => item.id === video.id);
+            if (exists) {
+                document.getElementById('watchLaterBtn').classList.add('added');
+                document.getElementById('watchLaterText').textContent = 'Added';
+            }
+        }
+
+        // =============================================
+        // SETUP BUTTONS - WITH NOTIFICATIONS
+        // =============================================
+        function setupButtons() {
+            // LIKE
+            document.getElementById('likeBtn').addEventListener('click', function() {
+                const isLiked = localStorage.getItem('liked_' + video.id) === 'true';
+                const isDisliked = localStorage.getItem('disliked_' + video.id) === 'true';
+                let likeCount = parseInt(localStorage.getItem('likeCount_' + video.id)) || 0;
+                let dislikeCount = parseInt(localStorage.getItem('dislikeCount_' + video.id)) || 0;
+
+                if (isLiked) {
+                    localStorage.removeItem('liked_' + video.id);
+                    likeCount = Math.max(0, likeCount - 1);
+                    localStorage.setItem('likeCount_' + video.id, likeCount);
+                    this.classList.remove('active');
+                } else {
+                    localStorage.setItem('liked_' + video.id, 'true');
+                    likeCount += 1;
+                    localStorage.setItem('likeCount_' + video.id, likeCount);
+                    this.classList.add('active');
+                    
+                    // ✅ SEND NOTIFICATION FOR LIKE
+                    var channelData = JSON.parse(localStorage.getItem('channelData')) || { name: 'Someone' };
+                    addNotification(
+                        'like',
+                        channelData.name || 'Someone',
+                        'liked your video',
+                        video.title,
+                        video.id
+                    );
+                    
+                    if (isDisliked) {
+                        localStorage.removeItem('disliked_' + video.id);
+                        dislikeCount = Math.max(0, dislikeCount - 1);
+                        localStorage.setItem('dislikeCount_' + video.id, dislikeCount);
+                        document.getElementById('dislikeBtn').classList.remove('active');
+                        document.getElementById('dislikeCount').textContent = dislikeCount;
+                    }
+                }
+                document.getElementById('likeCount').textContent = likeCount;
+                document.getElementById('dislikeCount').textContent = dislikeCount;
+            });
+
+            // DISLIKE
+            document.getElementById('dislikeBtn').addEventListener('click', function() {
+                const isLiked = localStorage.getItem('liked_' + video.id) === 'true';
+                const isDisliked = localStorage.getItem('disliked_' + video.id) === 'true';
+                let likeCount = parseInt(localStorage.getItem('likeCount_' + video.id)) || 0;
+                let dislikeCount = parseInt(localStorage.getItem('dislikeCount_' + video.id)) || 0;
+
+                if (isDisliked) {
+                    localStorage.removeItem('disliked_' + video.id);
+                    dislikeCount = Math.max(0, dislikeCount - 1);
+                    localStorage.setItem('dislikeCount_' + video.id, dislikeCount);
+                    this.classList.remove('active');
+                } else {
+                    localStorage.setItem('disliked_' + video.id, 'true');
+                    dislikeCount += 1;
+                    localStorage.setItem('dislikeCount_' + video.id, dislikeCount);
+                    this.classList.add('active');
+                    
+                    if (isLiked) {
+                        localStorage.removeItem('liked_' + video.id);
+                        likeCount = Math.max(0, likeCount - 1);
+                        localStorage.setItem('likeCount_' + video.id, likeCount);
+                        document.getElementById('likeBtn').classList.remove('active');
+                        document.getElementById('likeCount').textContent = likeCount;
+                    }
+                }
+                document.getElementById('likeCount').textContent = likeCount;
+                document.getElementById('dislikeCount').textContent = dislikeCount;
+            });
+
+            // SUBSCRIBE
+            document.getElementById('subscribeBtn').addEventListener('click', function() {
+                const isSubscribed = localStorage.getItem('subscribed_' + video.id) === 'true';
+                if (isSubscribed) {
+                    localStorage.removeItem('subscribed_' + video.id);
+                    this.classList.remove('subscribed');
+                    document.getElementById('subscribeText').textContent = 'Subscribe';
+                    showToast('🔔 Unsubscribed from ' + video.channel);
+                } else {
+                    localStorage.setItem('subscribed_' + video.id, 'true');
+                    this.classList.add('subscribed');
+                    document.getElementById('subscribeText').textContent = 'Subscribed';
+                    showToast('✅ Subscribed to ' + video.channel);
+                    
+                    // ✅ SEND NOTIFICATION FOR SUBSCRIBE
+                    var channelData = JSON.parse(localStorage.getItem('channelData')) || { name: 'Someone' };
+                    addNotification(
+                        'subscribe',
+                        channelData.name || 'Someone',
+                        'subscribed to your channel',
+                        null,
+                        null
+                    );
+                }
+            });
+
+            // WATCH LATER
+            document.getElementById('watchLaterBtn').addEventListener('click', function() {
+                let watchLater = JSON.parse(localStorage.getItem('watchLater')) || [];
+                const exists = watchLater.some(item => item.id === video.id);
+                if (exists) {
+                    watchLater = watchLater.filter(item => item.id !== video.id);
+                    localStorage.setItem('watchLater', JSON.stringify(watchLater));
+                    this.classList.remove('added');
+                    document.getElementById('watchLaterText').textContent = 'Watch Later';
+                    showToast('⏰ Removed from Watch Later');
+                } else {
+                    watchLater.push({
+                        id: video.id,
+                        title: video.title,
+                        channel: video.channel,
+                        avatar: video.avatar,
+                        thumbnail: video.thumbnail,
+                        duration: video.duration,
+                        addedAt: new Date().toISOString()
+                    });
+                    localStorage.setItem('watchLater', JSON.stringify(watchLater));
+                    this.classList.add('added');
+                    document.getElementById('watchLaterText').textContent = 'Added';
+                    showToast('✅ Added to Watch Later');
+                }
+            });
+
+            // SHARE
+            document.getElementById('shareBtn').addEventListener('click', function(e) {
+                e.stopPropagation();
+                document.getElementById('shareDropdown').classList.toggle('show');
+            });
+            document.addEventListener('click', function() {
+                document.getElementById('shareDropdown').classList.remove('show');
+            });
+            document.querySelectorAll('.share-dropdown a').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const type = this.dataset.share;
+                    const url = encodeURIComponent(window.location.href);
+                    const title = encodeURIComponent(video.title);
+                    let shareUrl = '';
+                    switch (type) {
+                        case 'facebook': shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`; break;
+                        case 'twitter': shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${title}`; break;
+                        case 'whatsapp': shareUrl = `https://api.whatsapp.com/send?text=${title}%20${url}`; break;
+                        case 'copy':
+                            navigator.clipboard.writeText(window.location.href).then(() => showToast('✅ Link copied!'));
+                            return;
+                    }
+                    if (shareUrl) window.open(shareUrl, '_blank');
+                    document.getElementById('shareDropdown').classList.remove('show');
+                });
+            });
+
+            // DOWNLOAD
+            document.getElementById('downloadBtn').addEventListener('click', function() {
+                showToast('⬇️ Download started... (simulated)');
+            });
+        }
+
+        // =============================================
+        // COMMENTS
+        // =============================================
+        function loadComments() {
+            const comments = JSON.parse(localStorage.getItem('comments_' + video.id)) || [];
+            const list = document.getElementById('commentsList');
+            const count = document.getElementById('commentCount');
+            count.textContent = comments.length + ' Comments';
+            if (comments.length === 0) {
+                list.innerHTML = `<div class="no-comments">No comments yet. Be the first to comment!</div>`;
+                return;
+            }
+            list.innerHTML = comments.map((comment, index) => `
+                <div class="comment-item" data-index="${index}">
+                    <div class="comment-avatar bg-blue-500 text-black">${comment.avatar || 'U'}</div>
+                    <div class="comment-content">
+                        <div class="comment-user">
+                            <strong>${comment.username || 'Unknown'}</strong>
+                            <span>${comment.timeAgo || 'Just now'}</span>
+                        </div>
+                        <p>${comment.text}</p>
+                        <div class="comment-actions-row">
+                            <button class="comment-like-btn" data-index="${index}">
+                                <i class="fas fa-thumbs-up"></i> <span>${comment.likes || 0}</span>
+                            </button>
+                            <button class="comment-delete-btn" data-index="${index}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.comment-like-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    const comments = JSON.parse(localStorage.getItem('comments_' + video.id)) || [];
+                    if (comments[index]) {
+                        comments[index].likes = (comments[index].likes || 0) + 1;
+                        localStorage.setItem('comments_' + video.id, JSON.stringify(comments));
+                        loadComments();
+                    }
+                });
+            });
+            document.querySelectorAll('.comment-delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    if (confirm('Delete this comment?')) {
+                        const comments = JSON.parse(localStorage.getItem('comments_' + video.id)) || [];
+                        comments.splice(index, 1);
+                        localStorage.setItem('comments_' + video.id, JSON.stringify(comments));
+                        loadComments();
+                        showToast('🗑️ Comment deleted');
+                    }
+                });
+            });
+        }
+
+        // =============================================
+        // ADD COMMENT - WITH NOTIFICATION
+        // =============================================
+        function addComment() {
+            const input = document.getElementById('commentInput');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            const userData = JSON.parse(localStorage.getItem('userData')) || { name: 'You', avatar: 'Y' };
+            const comments = JSON.parse(localStorage.getItem('comments_' + video.id)) || [];
+            comments.push({
+                username: userData.name || 'You',
+                avatar: userData.avatar || 'Y',
+                text: text,
+                likes: 0,
+                timeAgo: 'Just now',
+                timestamp: new Date().toISOString()
+            });
+            localStorage.setItem('comments_' + video.id, JSON.stringify(comments));
+            input.value = '';
+            document.getElementById('submitCommentBtn').disabled = true;
+            loadComments();
+            showToast('💬 Comment added!');
+            
+            // ✅ SEND NOTIFICATION FOR COMMENT
+            addNotification(
+                'comment',
+                userData.name || 'Someone',
+                'commented on your video',
+                video.title,
+                video.id
+            );
+        }
+
+        // =============================================
+        // SETUP COMMENTS
+        // =============================================
+        function setupComments() {
+            const input = document.getElementById('commentInput');
+            const submitBtn = document.getElementById('submitCommentBtn');
+            const cancelBtn = document.getElementById('cancelCommentBtn');
+            input.addEventListener('input', function() {
+                submitBtn.disabled = this.value.trim() === '';
+            });
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !submitBtn.disabled) addComment();
+            });
+            submitBtn.addEventListener('click', addComment);
+            cancelBtn.addEventListener('click', function() {
+                input.value = '';
+                submitBtn.disabled = true;
+            });
+        }
+
+        // =============================================
+        // SIDEBAR TOGGLE & COLLAPSE
+        // =============================================
+        function setupSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const toggle = document.getElementById('menuToggle');
+            const collapseToggle = document.getElementById('collapseToggle');
+            const main = document.getElementById('mainContent');
+            const isMobile = () => window.innerWidth < 768;
+
+            // Toggle sidebar visibility (mobile) / collapse (desktop)
+            function toggleSidebar() {
+                if (isMobile()) {
+                    // Mobile: slide in/out
+                    const isOpen = !sidebar.classList.contains('-translate-x-full');
+                    if (isOpen) {
+                        sidebar.classList.add('-translate-x-full');
+                        overlay.classList.add('hidden');
+                    } else {
+                        sidebar.classList.remove('-translate-x-full');
+                        overlay.classList.remove('hidden');
+                    }
+                } else {
+                    // Desktop: toggle collapse
+                    sidebar.classList.toggle('collapsed');
+                    if (sidebar.classList.contains('collapsed')) {
+                        sidebar.style.width = '64px';
+                        main.classList.remove('md:ml-64');
+                        main.classList.add('md:ml-16');
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">▶</span><span class="sidebar-text text-sm">Expand</span>';
+                        }
+                    } else {
+                        sidebar.style.width = '256px';
+                        main.classList.remove('md:ml-16');
+                        main.classList.add('md:ml-64');
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">◀</span><span class="sidebar-text text-sm">Collapse</span>';
+                        }
+                    }
+                }
+            }
+
+            // Menu toggle (hamburger)
+            if (toggle) {
+                toggle.addEventListener('click', toggleSidebar);
+            }
+
+            // Collapse toggle (desktop only)
+            if (collapseToggle) {
+                collapseToggle.addEventListener('click', toggleSidebar);
+            }
+
+            // Overlay click (mobile)
+            if (overlay) {
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden');
+                });
+            }
+
+            // Handle resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768) {
+                    // Desktop: ensure sidebar is visible
+                    sidebar.classList.remove('-translate-x-full');
+                    overlay.classList.add('hidden');
+                    // If collapsed state is stored in class, keep it
+                    if (!sidebar.classList.contains('collapsed')) {
+                        sidebar.style.width = '256px';
+                        main.classList.remove('md:ml-16');
+                        main.classList.add('md:ml-64');
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">◀</span><span class="sidebar-text text-sm">Collapse</span>';
+                        }
+                    } else {
+                        sidebar.style.width = '64px';
+                        main.classList.remove('md:ml-64');
+                        main.classList.add('md:ml-16');
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">▶</span><span class="sidebar-text text-sm">Expand</span>';
+                        }
+                    }
+                } else {
+                    // Mobile: hide sidebar
+                    sidebar.classList.add('-translate-x-full');
+                    sidebar.classList.remove('collapsed');
+                    sidebar.style.width = '256px';
+                    main.classList.remove('md:ml-64', 'md:ml-16');
+                    overlay.classList.add('hidden');
+                }
+            });
+        }
+
+        // =============================================
+        // INITIALIZE
+        // =============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVideo();
+            setupButtons();
+            setupComments();
+            setupSidebar();
+        });
+    </script>
+
+</body>
+</html>

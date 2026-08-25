@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Channel - YouTube</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #606060; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #808080; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar-transition {
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
+        .sidebar-scroll::-webkit-scrollbar-thumb { background: #606060; border-radius: 2px; }
+        .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+
+        #sidebar.collapsed .sidebar-text { display: none; }
+        #sidebar.collapsed .sidebar-icon { margin-right: 0; }
+        #sidebar.collapsed .sidebar-item { justify-content: center; padding: 8px 12px; }
+        #sidebar.collapsed .sidebar-heading { display: none; }
+        #sidebar.collapsed .sidebar-divider { display: none; }
+        #sidebar.collapsed .sidebar-hide-on-collapse { display: none; }
+
+        .collapse-toggle { display: none; }
+        @media (min-width: 768px) {
+            .collapse-toggle { display: flex; }
+        }
+
+        /* Channel */
+        .channel-banner {
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            height: 200px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            opacity: 0.6;
+        }
+
+        .channel-tab {
+            padding: 12px 24px;
+            color: #888;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .channel-tab:hover { color: #f1f1f1; }
+        .channel-tab.active {
+            color: #f1f1f1;
+            border-bottom-color: #3ea6ff;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .video-card { cursor: pointer; transition: transform 0.2s ease; }
+        .video-card:hover { transform: scale(1.02); }
+        .shorts-card { cursor: pointer; transition: transform 0.2s ease; flex-shrink: 0; }
+        .shorts-card:hover { transform: scale(1.05); }
+
+        .stat-item {
+            background: #1a1a1a;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-number { display: block; font-size: 28px; font-weight: 500; color: #f1f1f1; }
+        .stat-label { display: block; font-size: 13px; color: #888; margin-top: 4px; }
+
+        .playlist-card {
+            background: #1a1a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .playlist-card:hover { transform: scale(1.02); }
+        .playlist-thumbnail { position: relative; aspect-ratio: 16/9; overflow: hidden; }
+        .playlist-thumbnail img { width: 100%; height: 100%; object-fit: cover; }
+        .playlist-count {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            background: rgba(0,0,0,0.85);
+            color: #f1f1f1;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .playlist-info { padding: 12px 16px; }
+        .playlist-info h4 { font-size: 15px; font-weight: 500; margin: 0 0 4px 0; color: #f1f1f1; }
+        .playlist-info p { font-size: 13px; color: #888; margin: 0 0 12px 0; }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            color: #f1f1f1;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 1px solid #272727;
+            font-size: 14px;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; pointer-events: auto; }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ==========================================
+    HEADER
+    ========================================== -->
+    <header class="fixed top-0 left-0 right-0 z-50 h-14 bg-[#0f0f0f] border-b border-[#272727] flex items-center justify-between px-4">
+        <div class="flex items-center gap-4">
+            <button id="menuToggle" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full">☰</button>
+            <a href="index.html" class="flex items-center gap-1 text-white font-bold text-xl">
+                <span class="text-red-600 text-2xl">▶</span>
+                <span>YouTube</span>
+            </a>
+        </div>
+        <div class="hidden md:flex flex-1 max-w-2xl mx-4">
+            <input type="text" placeholder="Search" class="flex-1 bg-[#121212] border border-[#303030] text-white px-4 py-2 rounded-l-full outline-none focus:border-blue-600" />
+            <button class="bg-[#222] border border-l-0 border-[#303030] px-6 rounded-r-full text-white hover:bg-[#2a2a2a]">🔍</button>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="create.html" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full hidden md:block">⊞</a>
+            <a href="notifications.html" class="text-white text-2xl p-2 hover:bg-[#272727] rounded-full hidden md:block">🔔</a>
+            <a href="profile.html" class="bg-blue-500 text-black w-8 h-8 rounded-full font-bold text-sm flex items-center justify-center hover:opacity-80">P</a>
+        </div>
+    </header>
+
+    <!-- ==========================================
+    SIDEBAR
+    ========================================== -->
+    <aside id="sidebar" class="fixed top-14 left-0 bottom-0 w-64 bg-[#0f0f0f] overflow-y-auto p-2 sidebar-scroll sidebar-transition z-40 border-r border-[#272727] -translate-x-full md:translate-x-0">
+        
+        <button id="collapseToggle" class="collapse-toggle items-center gap-2 w-full px-3 py-2 text-gray-400 hover:text-white hover:bg-[#272727] rounded-lg transition mb-2">
+            <span class="text-xl">◀</span>
+            <span class="sidebar-text text-sm">Collapse</span>
+        </button>
+
+        <nav class="space-y-1">
+            <a href="index.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">⌂</span>
+                <span class="sidebar-text text-sm">Home</span>
+            </a>
+            <a href="shorts-page.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▶</span>
+                <span class="sidebar-text text-sm">Shorts</span>
+            </a>
+            <a href="subscriptions.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▣</span>
+                <span class="sidebar-text text-sm">Subscriptions</span>
+            </a>
+            <hr class="sidebar-divider border-[#272727] my-2" />
+            <p class="sidebar-heading text-xs text-gray-500 px-3 py-2">YOU</p>
+            <a href="channel.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727] bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◉</span>
+                <span class="sidebar-text text-sm">Your channel</span>
+            </a>
+            <a href="history.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◷</span>
+                <span class="sidebar-text text-sm">History</span>
+            </a>
+            <a href="your-videos.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">▣</span>
+                <span class="sidebar-text text-sm">Your videos</span>
+            </a>
+            <a href="watch-later.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">◷</span>
+                <span class="sidebar-text text-sm">Watch later</span>
+            </a>
+            <a href="liked.html" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">♡</span>
+                <span class="sidebar-text text-sm">Liked videos</span>
+            </a>
+            <hr class="sidebar-divider border-[#272727] my-2" />
+            <p class="sidebar-heading text-xs text-gray-500 px-3 py-2">EXPLORE</p>
+            <a href="explore.html?category=trending" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">🔥</span>
+                <span class="sidebar-text text-sm">Trending</span>
+            </a>
+            <a href="explore.html?category=music" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">♫</span>
+                <span class="sidebar-text text-sm">Music</span>
+            </a>
+            <a href="explore.html?category=movies" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">🎬</span>
+                <span class="sidebar-text text-sm">Movies & TV</span>
+            </a>
+            <a href="explore.html?category=sports" class="sidebar-item flex items-center gap-6 px-3 py-2 text-white rounded-lg hover:bg-[#272727]">
+                <span class="sidebar-icon text-xl w-6 text-center">⚽</span>
+                <span class="sidebar-text text-sm">Sports</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+
+    <!-- ==========================================
+    MAIN CONTENT - CHANNEL
+    ========================================== -->
+    <main id="mainContent" class="mt-14 p-4 bg-[#0f0f0f] min-h-screen text-white transition-all duration-300 md:ml-64">
+
+        <div class="max-w-6xl mx-auto">
+
+            <!-- Channel Banner -->
+            <div class="channel-banner">
+                <span>🎬</span>
+            </div>
+
+            <!-- Channel Info -->
+            <div class="flex flex-wrap items-center gap-6 mt-4 pb-4 border-b border-[#272727]">
+                <div class="w-20 h-20 rounded-full bg-blue-500 text-black flex items-center justify-center text-3xl font-bold" id="channelAvatar">C</div>
+                <div class="flex-1 min-w-[200px]">
+                    <h1 class="text-2xl font-medium" id="channelName">Your Channel</h1>
+                    <p class="text-sm text-gray-400" id="channelHandle">@yourchannel</p>
+                    <p class="text-sm text-gray-400" id="channelStats">0 subscribers • 0 videos</p>
+                </div>
+                <button id="editChannelBtn" class="px-4 py-2 bg-[#272727] text-white rounded-full text-sm hover:bg-[#3a3a3a] transition">
+                    <i class="fas fa-pen mr-2"></i> Customize Channel
+                </button>
+            </div>
+
+            <!-- Channel Tabs -->
+            <div class="flex gap-0 overflow-x-auto border-b border-[#272727] mt-4">
+                <button class="channel-tab active" data-tab="videos">Videos</button>
+                <button class="channel-tab" data-tab="shorts">Shorts</button>
+                <button class="channel-tab" data-tab="playlists">Playlists</button>
+                <button class="channel-tab" data-tab="about">About</button>
+            </div>
+
+            <!-- Tab: Videos -->
+            <div class="tab-content active mt-6" id="tab-videos">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="channelVideoGrid"></div>
+            </div>
+
+            <!-- Tab: Shorts -->
+            <div class="tab-content mt-6" id="tab-shorts">
+                <div class="flex gap-4 overflow-x-auto pb-4" id="channelShortsGrid"></div>
+            </div>
+
+            <!-- Tab: Playlists -->
+            <div class="tab-content mt-6" id="tab-playlists">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium">Your Playlists</h3>
+                    <button id="createPlaylistBtn" class="px-4 py-2 bg-blue-500 text-black rounded-full text-sm font-medium hover:bg-blue-400 transition">
+                        <i class="fas fa-plus mr-2"></i> New Playlist
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="playlistsGrid"></div>
+            </div>
+
+            <!-- Tab: About -->
+            <div class="tab-content mt-6" id="tab-about">
+                <div class="bg-[#1a1a1a] p-6 rounded-xl">
+                    <h3 class="text-lg font-medium mb-2">About</h3>
+                    <p class="text-gray-300 text-sm" id="channelDescription">Welcome to my channel! I create content about coding, design, and creativity. Subscribe and join the community! 🚀</p>
+                    
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+                        <div class="stat-item">
+                            <span class="stat-number" id="aboutSubscribers">0</span>
+                            <span class="stat-label">Subscribers</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="aboutVideos">0</span>
+                            <span class="stat-label">Videos</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="aboutViews">0</span>
+                            <span class="stat-label">Total Views</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number" id="aboutJoined">2026</span>
+                            <span class="stat-label">Joined</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- ==========================================
+    JAVASCRIPT
+    ========================================== -->
+    <script>
+        // =============================================
+        // DATA
+        // =============================================
+        const videos = [
+            { id: 1, title: "Davido - AWAY (Official Video)", channel: "Davido", avatar: "D", views: "N/A", uploaded: "N/A", thumbnail: "https://i.ytimg.com/vi/SbgKpHi-Cao/hqdefault.jpg", category: "music", duration: "TBD", url: "https://youtu.be/SbgKpHi-Cao", description: "Davido's official music video for 'AWAY'." },
+            { id: 2, title: "Rihanna - Umbrella (Orange Version) ft. JAY-Z", channel: "Rihanna", avatar: "R", views: "1.2B", uploaded: "15 years ago", thumbnail: "https://i.ytimg.com/vi/CvBfHwUxHIk/hqdefault.jpg", category: "music", duration: "4:23", url: "https://youtu.be/CvBfHwUxHIk", description: "Rihanna's official music video for 'Umbrella' featuring JAY-Z." },
+            { id: 3, title: "Ed Sheeran - Shape Of You", channel: "Ed Sheeran", avatar: "E", views: "3.5B", uploaded: "4 years ago", thumbnail: "https://i.ytimg.com/vi/JGwWNGJdvx8/hqdefault.jpg", category: "music", duration: "4:24", url: "https://youtu.be/JGwWNGJdvx8", description: "Ed Sheeran's official music video for 'Shape Of You'." },
+            { id: 4, title: "Adele - Someone Like You", channel: "Adele", avatar: "A", views: "2.8B", uploaded: "6 years ago", thumbnail: "https://i.ytimg.com/vi/hLQl3WQQoQ0/hqdefault.jpg", category: "music", duration: "4:47", url: "https://youtu.be/hLQl3WQQoQ0", description: "Adele's official music video for 'Someone Like You'." },
+            { id: 5, title: "Bruno Mars - Just The Way You Are", channel: "Bruno Mars", avatar: "B", views: "2.1B", uploaded: "5 years ago", thumbnail: "https://i.ytimg.com/vi/LjhCEhWiKXk/hqdefault.jpg", category: "music", duration: "3:42", url: "https://youtu.be/LjhCEhWiKXk", description: "Bruno Mars' official music video for 'Just The Way You Are'." },
+            { id: 6, title: "Taylor Swift - Anti-Hero", channel: "Taylor Swift", avatar: "T", views: "650M", uploaded: "2 years ago", thumbnail: "https://i.ytimg.com/vi/b1kbLwvqugk/hqdefault.jpg", category: "music", duration: "4:14", url: "https://youtu.be/b1kbLwvqugk", description: "Taylor Swift's official music video for 'Anti-Hero'." },
+            { id: 7, title: "Minecraft But I Can't Stop Jumping...", channel: "Dream", avatar: "D", views: "45M", uploaded: "2 years ago", thumbnail: "https://i.ytimg.com/vi/6ZfuNTqbHE8/hqdefault.jpg", category: "gaming", duration: "18:23", url: "https://youtu.be/6ZfuNTqbHE8", description: "Dream plays Minecraft with a twist - he can't stop jumping!" },
+            { id: 8, title: "How to Make Learning Addictive | TED", channel: "TED", avatar: "T", views: "11M", uploaded: "1 year ago", thumbnail: "https://i.ytimg.com/vi/P6FORpg0KVo/hqdefault.jpg", category: "news", duration: "12:45", url: "https://youtu.be/P6FORpg0KVo", description: "Luis Von Ahn on how to make learning as addictive as social media." },
+            { id: 9, title: "48 Laws of Power Book Summary", channel: "Thinking Shelf Lab", avatar: "T", views: "559K", uploaded: "4 months ago", thumbnail: "https://i.ytimg.com/vi/taRTn9qpSH4/hqdefault.jpg", category: "news", duration: "12:30", url: "https://youtu.be/taRTn9qpSH4", description: "A summary of the 48 Laws of Power by Robert Greene." },
+            { id: 10, title: "The Great Depression Explained Like You're 5", channel: "Crayon Capital", avatar: "C", views: "1.8M", uploaded: "1 year ago", thumbnail: "https://i.ytimg.com/vi/LuEcoqizj0o/hqdefault.jpg", category: "news", duration: "16:30", url: "https://youtu.be/LuEcoqizj0o", description: "A simple explanation of the Great Depression." },
+            { id: 11, title: "Late Szoboszlai Penalty! Newcastle 2-2 Liverpool | Highlights", channel: "Liverpool FC", avatar: "L", views: "761K", uploaded: "19 hours ago", thumbnail: "https://i.ytimg.com/vi/H9SErdAUTmE/hqdefault.jpg", category: "sports", duration: "10:30", url: "https://youtu.be/H9SErdAUTmE", description: "Highlights from the Premier League match between Newcastle United and Liverpool." },
+            { id: 12, title: "Pep Guardiola: Rewriting Football Rules", channel: "BBC Football", avatar: "B", views: "662K", uploaded: "3 months ago", thumbnail: "https://i.ytimg.com/vi/sA4_o-qDcNs/hqdefault.jpg", category: "sports", duration: "22:10", url: "https://youtu.be/sA4_o-qDcNs", description: "How Pep Guardiola changed the game of football." },
+            { id: 13, title: "BLAQBONEZ & ODUMODUBLVCK'S FEUD", channel: "Nevon HQ", avatar: "N", views: "248K", uploaded: "2 days ago", thumbnail: "https://i.ytimg.com/vi/lvkpeZJVfsc/hqdefault.jpg", category: "music", duration: "15:20", url: "https://youtu.be/lvkpeZJVfsc", description: "The story behind Blaqbonez and Odumodublvck's feud." },
+            { id: 14, title: "BOVI AT DAYSTAR CHRISTIAN CENTRE", channel: "GospelTech Tv", avatar: "G", views: "320K", uploaded: "3 months ago", thumbnail: "https://i.ytimg.com/vi/BKBdIepQB2E/hqdefault.jpg", category: "live", duration: "45:00", url: "https://youtu.be/BKBdIepQB2E", description: "Bovi's comedy performance at Daystar Christian Centre." },
+            { id: 15, title: "Project Manuscript II Assessment Guide", channel: "Rony OnlineGigs", avatar: "R", views: "477", uploaded: "19 hours ago", thumbnail: "https://i.ytimg.com/vi/BJDyuBhrVAk/hqdefault.jpg", category: "gaming", duration: "24:18", url: "https://youtu.be/BJDyuBhrVAk", description: "A step-by-step guide for Project Manuscript II assessment." },
+            { id: 16, title: "Psychology of Money in Just 10 Minutes", channel: "Becoming More", avatar: "B", views: "1.7M", uploaded: "1 year ago", thumbnail: "https://i.ytimg.com/vi/yhq1cPRHR6k/hqdefault.jpg", category: "live", duration: "10:00", url: "https://youtu.be/yhq1cPRHR6k", description: "The Psychology of Money by Morgan Housel summarized." },
+            { id: 17, title: "The Terrifying Paradox of Self-Awareness", channel: "Aperture", avatar: "A", views: "920K", uploaded: "5 months ago", thumbnail: "https://i.ytimg.com/vi/3x6hiS0E_7w/hqdefault.jpg", category: "news", duration: "14:30", url: "https://youtu.be/3x6hiS0E_7w", description: "A deep dive into the paradox of self-awareness." },
+            { id: 18, title: "How to Read Anyone Instantly", channel: "Thynksee", avatar: "T", views: "3.2M", uploaded: "1 year ago", thumbnail: "https://i.ytimg.com/vi/iYfPqg7aXH8/hqdefault.jpg", category: "news", duration: "18:45", url: "https://youtu.be/iYfPqg7aXH8", description: "Nietzsche's 18 psychological truths on how to read people." }
+        ];
+
+        const shorts = [
+            { id: 101, title: "Stoicism and Nihilism 🤔", channel: "Philosophy Hub", views: "484", thumbnail: "https://i.ytimg.com/vi/wlvBq73zD8o/hqdefault.jpg" },
+            { id: 102, title: "Philosophy is Useless", channel: "Philosophy Hub", views: "2.3K", thumbnail: "https://i.ytimg.com/vi/x5L-MG6q5bA/hqdefault.jpg" },
+            { id: 103, title: "Existentialism vs. Nihilism", channel: "Philosophy Hub", views: "326K", thumbnail: "https://i.ytimg.com/vi/m_SJjpFB_GM/hqdefault.jpg" },
+            { id: 104, title: "Build AI apps in minutes", channel: "Ads-creative", views: "140K", thumbnail: "https://i.ytimg.com/vi/W7SwKZzl0kY/hqdefault.jpg" },
+            { id: 105, title: "How to know if someone has low EQ", channel: "EQ Insights", views: "515", thumbnail: "https://i.ytimg.com/vi/KwddlnXkJqs/hqdefault.jpg" },
+            { id: 106, title: "The Stoic Mindset - Jordan Peterson", channel: "Jordan Peterson Clips", views: "1.2K", thumbnail: "https://i.ytimg.com/vi/hfePd0-8KCM/hqdefault.jpg" }
+        ];
+
+        // =============================================
+        // TOAST
+        // =============================================
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // =============================================
+        // LOAD CHANNEL DATA
+        // =============================================
+        function loadChannelData() {
+            const channelData = JSON.parse(localStorage.getItem('channelData')) || {
+                name: 'Your Channel',
+                handle: 'yourchannel',
+                avatar: 'C',
+                description: 'Welcome to my channel! I create content about coding, design, and creativity. Subscribe and join the community! 🚀',
+                joined: '2026'
+            };
+
+            document.getElementById('channelAvatar').textContent = channelData.avatar || 'C';
+            document.getElementById('channelName').textContent = channelData.name;
+            document.getElementById('channelHandle').textContent = '@' + channelData.handle;
+            document.getElementById('channelDescription').textContent = channelData.description;
+            document.getElementById('aboutJoined').textContent = channelData.joined;
+
+            // Calculate stats
+            const subscribers = getTotalSubscribers();
+            const totalVideos = videos.length;
+            const totalViews = getTotalViews();
+
+            document.getElementById('channelStats').textContent = 
+                subscribers.toLocaleString() + ' subscribers • ' + totalVideos + ' videos';
+            document.getElementById('aboutSubscribers').textContent = subscribers.toLocaleString();
+            document.getElementById('aboutVideos').textContent = totalVideos;
+            document.getElementById('aboutViews').textContent = totalViews.toLocaleString();
+        }
+
+        function getTotalSubscribers() {
+            let count = 0;
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('subscribed_') && localStorage.getItem(key) === 'true') {
+                    count++;
+                }
+            }
+            return count || Math.floor(Math.random() * 1000) + 100;
+        }
+
+        function getTotalViews() {
+            let total = 0;
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('views_')) {
+                    total += parseInt(localStorage.getItem(key)) || 0;
+                }
+            }
+            return total || Math.floor(Math.random() * 50000) + 5000;
+        }
+
+        // =============================================
+        // RENDER CHANNEL VIDEOS
+        // =============================================
+        function renderChannelVideos() {
+            const grid = document.getElementById('channelVideoGrid');
+            grid.innerHTML = videos.map(v => `
+                <div class="video-card" data-id="${v.id}">
+                    <div class="relative rounded-xl overflow-hidden bg-[#1a1a1a]">
+                        <img src="${v.thumbnail}" alt="${v.title}" class="w-full aspect-video object-cover" loading="lazy" onerror="this.src='https://via.placeholder.com/320x180/1a1a1a/888?text=No+Image'" />
+                        <span class="absolute bottom-2 right-2 bg-black/90 text-white text-xs px-1.5 py-0.5 rounded">${v.duration}</span>
+                    </div>
+                    <div class="flex gap-3 mt-3">
+                        <div class="w-9 h-9 rounded-full bg-blue-500 text-black flex items-center justify-center font-bold text-sm flex-shrink-0">${v.avatar}</div>
+                        <div>
+                            <h3 class="text-sm font-medium line-clamp-2">${v.title}</h3>
+                            <p class="text-xs text-gray-400 mt-1">${v.channel}</p>
+                            <p class="text-xs text-gray-400">${v.views} views • ${v.uploaded}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('#channelVideoGrid .video-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    localStorage.setItem('selectedVideoId', this.dataset.id);
+                    window.location.href = 'watch.html';
+                });
+            });
+        }
+
+        // =============================================
+        // RENDER CHANNEL SHORTS
+        // =============================================
+        function renderChannelShorts() {
+            const grid = document.getElementById('channelShortsGrid');
+            grid.innerHTML = shorts.map(s => `
+                <div class="shorts-card w-40" data-id="${s.id}">
+                    <img src="${s.thumbnail}" alt="${s.title}" class="w-full aspect-[9/16] object-cover rounded-xl" loading="lazy" onerror="this.src='https://via.placeholder.com/180x320/1a1a1a/888?text=No+Image'" />
+                    <div class="mt-2">
+                        <h4 class="text-sm font-medium line-clamp-2">${s.title}</h4>
+                        <p class="text-xs text-gray-400">${s.views} views</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // =============================================
+        // PLAYLISTS
+        // =============================================
+        function loadPlaylists() {
+            const grid = document.getElementById('playlistsGrid');
+            const playlists = JSON.parse(localStorage.getItem('playlists')) || [];
+
+            if (playlists.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center text-gray-400 py-12">
+                        <div class="text-4xl mb-4">📂</div>
+                        <p class="text-lg">No playlists yet</p>
+                        <p class="text-sm mt-1">Create your first playlist to organize your videos.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = playlists.map((pl, index) => `
+                <div class="playlist-card">
+                    <div class="playlist-thumbnail">
+                        <img src="${pl.videos && pl.videos.length > 0 ? pl.videos[0].thumbnail : 'https://via.placeholder.com/320x180/1a1a1a/888?text=Empty'}" alt="${pl.name}" />
+                        <span class="playlist-count">${pl.videos ? pl.videos.length : 0} videos</span>
+                    </div>
+                    <div class="playlist-info">
+                        <h4>${pl.name}</h4>
+                        <p>Created ${new Date(pl.created).toLocaleDateString()}</p>
+                        <div class="flex gap-2">
+                            <button class="px-3 py-1 bg-[#272727] rounded-full text-xs hover:bg-[#3a3a3a] transition view-playlist" data-index="${index}">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="px-3 py-1 bg-[#272727] rounded-full text-xs hover:bg-red-600 transition delete-playlist" data-index="${index}">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.view-playlist').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    const playlists = JSON.parse(localStorage.getItem('playlists')) || [];
+                    const pl = playlists[index];
+                    if (pl && pl.videos && pl.videos.length > 0) {
+                        let msg = '📂 ' + pl.name + '\n\n';
+                        pl.videos.forEach((v, i) => {
+                            msg += (i+1) + '. ' + v.title + '\n';
+                        });
+                        alert(msg);
+                    } else {
+                        alert('This playlist is empty.');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-playlist').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.index);
+                    const playlists = JSON.parse(localStorage.getItem('playlists')) || [];
+                    if (confirm('Delete this playlist?')) {
+                        playlists.splice(index, 1);
+                        localStorage.setItem('playlists', JSON.stringify(playlists));
+                        loadPlaylists();
+                        showToast('🗑️ Playlist deleted');
+                    }
+                });
+            });
+        }
+
+        function createPlaylist() {
+            const name = prompt('Enter playlist name:');
+            if (!name || name.trim() === '') return;
+            const playlists = JSON.parse(localStorage.getItem('playlists')) || [];
+            playlists.push({
+                id: Date.now(),
+                name: name.trim(),
+                videos: [],
+                created: new Date().toISOString()
+            });
+            localStorage.setItem('playlists', JSON.stringify(playlists));
+            loadPlaylists();
+            showToast('✅ Playlist created!');
+        }
+
+        // =============================================
+        // EDIT CHANNEL
+        // =============================================
+        function editChannel() {
+            const channelData = JSON.parse(localStorage.getItem('channelData')) || {
+                name: 'Your Channel',
+                handle: 'yourchannel',
+                avatar: 'C',
+                description: 'Welcome to my channel! I create content about coding, design, and creativity. Subscribe and join the community! 🚀',
+                joined: '2026'
+            };
+
+            const newName = prompt('Channel Name:', channelData.name);
+            if (newName !== null && newName.trim() !== '') channelData.name = newName.trim();
+
+            const newHandle = prompt('Channel Handle (without @):', channelData.handle);
+            if (newHandle !== null && newHandle.trim() !== '') channelData.handle = newHandle.trim();
+
+            const newAvatar = prompt('Channel Avatar (single letter or emoji):', channelData.avatar);
+            if (newAvatar !== null && newAvatar.trim() !== '') channelData.avatar = newAvatar.trim();
+
+            const newDesc = prompt('Channel Description:', channelData.description);
+            if (newDesc !== null && newDesc.trim() !== '') channelData.description = newDesc.trim();
+
+            localStorage.setItem('channelData', JSON.stringify(channelData));
+            loadChannelData();
+            showToast('✅ Channel updated!');
+        }
+
+        // =============================================
+        // TABS
+        // =============================================
+        function setupTabs() {
+            document.querySelectorAll('.channel-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.channel-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+                    if (this.dataset.tab === 'playlists') loadPlaylists();
+                });
+            });
+        }
+
+        // =============================================
+        // SIDEBAR
+        // =============================================
+        function setupSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const toggle = document.getElementById('menuToggle');
+            const collapseToggle = document.getElementById('collapseToggle');
+            const main = document.getElementById('mainContent');
+            const isMobile = () => window.innerWidth < 768;
+
+            function toggleSidebar() {
+                if (isMobile()) {
+                    const isOpen = !sidebar.classList.contains('-translate-x-full');
+                    if (isOpen) {
+                        sidebar.classList.add('-translate-x-full');
+                        if (overlay) overlay.classList.add('hidden');
+                    } else {
+                        sidebar.classList.remove('-translate-x-full');
+                        if (overlay) overlay.classList.remove('hidden');
+                    }
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    if (sidebar.classList.contains('collapsed')) {
+                        sidebar.style.width = '64px';
+                        if (main) {
+                            main.classList.remove('md:ml-64');
+                            main.classList.add('md:ml-16');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">▶</span><span class="sidebar-text text-sm">Expand</span>';
+                        }
+                    } else {
+                        sidebar.style.width = '256px';
+                        if (main) {
+                            main.classList.remove('md:ml-16');
+                            main.classList.add('md:ml-64');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">◀</span><span class="sidebar-text text-sm">Collapse</span>';
+                        }
+                    }
+                }
+            }
+
+            if (toggle) toggle.addEventListener('click', toggleSidebar);
+            if (collapseToggle) collapseToggle.addEventListener('click', toggleSidebar);
+            if (overlay) {
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('hidden');
+                });
+            }
+
+            window.addEventListener('resize', function() {
+                if (window.innerWidth >= 768) {
+                    sidebar.classList.remove('-translate-x-full');
+                    if (overlay) overlay.classList.add('hidden');
+                    if (!sidebar.classList.contains('collapsed')) {
+                        sidebar.style.width = '256px';
+                        if (main) {
+                            main.classList.remove('md:ml-16');
+                            main.classList.add('md:ml-64');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">◀</span><span class="sidebar-text text-sm">Collapse</span>';
+                        }
+                    } else {
+                        sidebar.style.width = '64px';
+                        if (main) {
+                            main.classList.remove('md:ml-64');
+                            main.classList.add('md:ml-16');
+                        }
+                        if (collapseToggle) {
+                            collapseToggle.innerHTML = '<span class="text-xl">▶</span><span class="sidebar-text text-sm">Expand</span>';
+                        }
+                    }
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebar.classList.remove('collapsed');
+                    sidebar.style.width = '256px';
+                    if (main) {
+                        main.classList.remove('md:ml-64', 'md:ml-16');
+                    }
+                    if (overlay) overlay.classList.add('hidden');
+                }
+            });
+
+            if (window.innerWidth < 768) {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('collapsed');
+                sidebar.style.width = '256px';
+                if (main) {
+                    main.classList.remove('md:ml-64', 'md:ml-16');
+                }
+            } else {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.remove('collapsed');
+                sidebar.style.width = '256px';
+                if (main) {
+                    main.classList.remove('md:ml-16');
+                    main.classList.add('md:ml-64');
+                }
+            }
+        }
+
+        // =============================================
+        // INITIALIZE
+        // =============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            loadChannelData();
+            renderChannelVideos();
+            renderChannelShorts();
+            loadPlaylists();
+            setupTabs();
+            setupSidebar();
+
+            document.getElementById('editChannelBtn').addEventListener('click', editChannel);
+            document.getElementById('createPlaylistBtn').addEventListener('click', createPlaylist);
+        });
+    </script>
+
+</body>
+</html>

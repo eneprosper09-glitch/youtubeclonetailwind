@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - YouTube</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f0f0f; }
+        ::-webkit-scrollbar-thumb { background: #606060; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #808080; }
+
+        body {
+            background: #0f0f0f;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Roboto', Arial, sans-serif;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: #1a1a1a;
+            padding: 40px 32px;
+            border-radius: 16px;
+            border: 1px solid #272727;
+        }
+
+        .login-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 28px;
+            font-weight: 700;
+            color: #f1f1f1;
+            margin-bottom: 24px;
+        }
+        .login-logo .youtube-icon {
+            color: #ff0000;
+            font-size: 32px;
+        }
+
+        .login-box h2 {
+            font-size: 24px;
+            font-weight: 500;
+            color: #f1f1f1;
+            margin: 0 0 8px 0;
+            text-align: center;
+        }
+        .login-box > p {
+            color: #888;
+            font-size: 14px;
+            text-align: center;
+            margin: 0 0 24px 0;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #f1f1f1;
+            margin-bottom: 6px;
+        }
+        .form-group .form-input {
+            width: 100%;
+            background: #0f0f0f;
+            border: 1px solid #303030;
+            border-radius: 8px;
+            color: #f1f1f1;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .form-group .form-input:focus {
+            outline: none;
+            border-color: #3ea6ff;
+        }
+
+        .login-btn {
+            width: 100%;
+            background: #3ea6ff;
+            border: none;
+            color: #0f0f0f;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 8px;
+        }
+        .login-btn:hover {
+            background: #65b8ff;
+        }
+
+        .signup-text {
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+            margin-top: 16px;
+        }
+        .signup-text a {
+            color: #3ea6ff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .signup-text a:hover {
+            text-decoration: underline;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a1a;
+            color: #f1f1f1;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 1px solid #272727;
+            font-size: 14px;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; pointer-events: auto; }
+
+        /* Hide signup box initially */
+        #signupBox { display: none; }
+
+        @media (max-width: 480px) {
+            .login-box { padding: 24px 16px; }
+            .login-logo { font-size: 22px; }
+            .login-box h2 { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- ==========================================
+    LOGIN CONTAINER
+    ========================================== -->
+    <div class="login-container">
+
+        <!-- Login Box -->
+        <div class="login-box" id="loginBox">
+            <div class="login-logo">
+                <span class="youtube-icon">▶</span>
+                <span>YouTube</span>
+            </div>
+            <h2>Sign In</h2>
+            <p>Sign in to access your channel and videos</p>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="you@email.com" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" class="form-input" required>
+                </div>
+
+                <button type="submit" class="login-btn">Sign In</button>
+            </form>
+
+            <p class="signup-text">
+                Don't have an account? <a href="#" id="showSignup">Sign Up</a>
+            </p>
+        </div>
+
+        <!-- Sign Up Box -->
+        <div class="login-box" id="signupBox">
+            <div class="login-logo">
+                <span class="youtube-icon">▶</span>
+                <span>YouTube</span>
+            </div>
+            <h2>Sign Up</h2>
+            <p>Create your account to get started</p>
+
+            <form id="signupForm">
+                <div class="form-group">
+                    <label for="signupName">Full Name</label>
+                    <input type="text" id="signupName" placeholder="Your Name" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="signupEmail">Email</label>
+                    <input type="email" id="signupEmail" placeholder="you@email.com" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" placeholder="Create a password (min 6 chars)" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="signupHandle">Channel Handle (without @)</label>
+                    <input type="text" id="signupHandle" placeholder="yourchannel" class="form-input" required>
+                </div>
+
+                <button type="submit" class="login-btn">Create Account</button>
+            </form>
+
+            <p class="signup-text">
+                Already have an account? <a href="#" id="showLogin">Sign In</a>
+            </p>
+        </div>
+
+    </div>
+
+    <!-- ==========================================
+    JAVASCRIPT
+    ========================================== -->
+    <script>
+        // =============================================
+        // TOAST
+        // =============================================
+        function showToast(message) {
+            var toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(function() {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // =============================================
+        // CHECK IF USER IS ALREADY LOGGED IN
+        // =============================================
+        function isLoggedIn() {
+            var user = JSON.parse(localStorage.getItem('currentUser'));
+            return user !== null;
+        }
+
+        // =============================================
+        // TOGGLE LOGIN/SIGNUP
+        // =============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // If already logged in, redirect to home
+            if (isLoggedIn()) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Show signup form
+            document.getElementById('showSignup').addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('loginBox').style.display = 'none';
+                document.getElementById('signupBox').style.display = 'block';
+            });
+
+            // Show login form
+            document.getElementById('showLogin').addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('signupBox').style.display = 'none';
+                document.getElementById('loginBox').style.display = 'block';
+            });
+
+            // Handle Login
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleLogin();
+            });
+
+            // Handle Signup
+            document.getElementById('signupForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleSignup();
+            });
+        });
+
+        // =============================================
+        // LOGIN FUNCTION
+        // =============================================
+        function handleLogin() {
+            var email = document.getElementById('loginEmail').value.trim();
+            var password = document.getElementById('loginPassword').value.trim();
+
+            if (!email || !password) {
+                showToast('⚠️ Please fill in all fields.');
+                return;
+            }
+
+            // Get users from localStorage
+            var users = JSON.parse(localStorage.getItem('users')) || [];
+
+            // Find user
+            var user = users.find(function(u) {
+                return u.email === email && u.password === password;
+            });
+
+            if (!user) {
+                showToast('❌ Invalid email or password. Please try again.');
+                return;
+            }
+
+            // Save current user session
+            localStorage.setItem('currentUser', JSON.stringify(user));
+
+            // Also update channel data
+            localStorage.setItem('channelData', JSON.stringify({
+                name: user.name,
+                handle: user.handle,
+                avatar: user.avatar || user.name.charAt(0).toUpperCase(),
+                description: 'Welcome to my channel! 🚀',
+                joined: new Date().getFullYear()
+            }));
+
+            localStorage.setItem('userData', JSON.stringify({
+                name: user.name,
+                handle: user.handle,
+                email: user.email,
+                avatar: user.avatar || user.name.charAt(0).toUpperCase(),
+                joined: new Date().getFullYear()
+            }));
+
+            showToast('✅ Welcome back, ' + user.name + '!');
+            setTimeout(function() {
+                window.location.href = 'index.html';
+            }, 1000);
+        }
+
+        // =============================================
+        // SIGNUP FUNCTION
+        // =============================================
+        function handleSignup() {
+            var name = document.getElementById('signupName').value.trim();
+            var email = document.getElementById('signupEmail').value.trim();
+            var password = document.getElementById('signupPassword').value.trim();
+            var handle = document.getElementById('signupHandle').value.trim();
+
+            if (!name || !email || !password || !handle) {
+                showToast('⚠️ Please fill in all fields.');
+                return;
+            }
+
+            if (password.length < 6) {
+                showToast('⚠️ Password must be at least 6 characters.');
+                return;
+            }
+
+            // Get users from localStorage
+            var users = JSON.parse(localStorage.getItem('users')) || [];
+
+            // Check if email already exists
+            if (users.some(function(u) { return u.email === email; })) {
+                showToast('❌ This email is already registered. Please sign in.');
+                return;
+            }
+
+            // Create new user
+            var newUser = {
+                id: Date.now(),
+                name: name,
+                email: email,
+                password: password,
+                handle: handle,
+                avatar: name.charAt(0).toUpperCase(),
+                joined: new Date().toISOString()
+            };
+
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+
+            // Auto-login after signup
+            localStorage.setItem('currentUser', JSON.stringify(newUser));
+
+            localStorage.setItem('channelData', JSON.stringify({
+                name: name,
+                handle: handle,
+                avatar: name.charAt(0).toUpperCase(),
+                description: 'Welcome to my channel! 🚀',
+                joined: new Date().getFullYear()
+            }));
+
+            localStorage.setItem('userData', JSON.stringify({
+                name: name,
+                handle: handle,
+                email: email,
+                avatar: name.charAt(0).toUpperCase(),
+                joined: new Date().getFullYear()
+            }));
+
+            showToast('🎉 Account created successfully! Welcome, ' + name + '!');
+            setTimeout(function() {
+                window.location.href = 'index.html';
+            }, 1000);
+        }
+    </script>
+
+</body>
+</html>
